@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ค้นหาของที่หาย</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body>
+  <h2>🔍 ค้นหาของที่หาย</h2>
+
+  <input id="itemName" placeholder="ชื่อสิ่งของที่หาย">
+  <input id="category" placeholder="หมวดหมู่ (เช่น โทรศัพท์)">
+  <button id="searchBtn">ค้นหา</button>
+
+  <div id="results"></div>
+
+  <script>
+    async function main() {
+      await liff.init({ liffId: "YOUR_LIFF_ID" })
+      if (!liff.isLoggedIn()) {
+        liff.login()
+      }
+
+      const profile = await liff.getProfile()
+      console.log("User:", profile.displayName)
+
+      document.getElementById('searchBtn').onclick = async () => {
+        const name = document.getElementById('itemName').value
+        const category = document.getElementById('category').value
+
+        const res = await fetch('https://your-api-url.com/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, category, userId: profile.userId })
+        })
+        const data = await res.json()
+        document.getElementById('results').innerHTML =
+          data.length ? data.map(i => `<p>${i.name} - ${i.location}</p>`).join('') : "ไม่พบข้อมูล"
+      }
+    }
+    main()
+  </script>
+</body>
+</html>
