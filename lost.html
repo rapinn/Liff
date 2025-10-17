@@ -89,9 +89,12 @@
     <script>
         async function main() {
             await liff.init({ liffId: "2008305063-oQwEaGVW" }); // 🔹 เปลี่ยนเป็น LIFF ID ของคุณ
-            // if (!liff.isLoggedIn()) {
-            //     liff.login({ redirectUri: window.location.href });
-            //     return;
+            if (!liff.isLoggedIn()) {
+                //liff.login({ redirectUri: window.location.href });
+                const myRedirectUri = "https://found-form.vercel.app/lost.html";
+                liff.login({ redirectUri: myRedirectUri });
+
+                return;
             }
 
             const profile = await liff.getProfile();
@@ -125,7 +128,7 @@
                     document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
                 }
             };
-        // }
+        }
         main();
     </script>
 </body>
