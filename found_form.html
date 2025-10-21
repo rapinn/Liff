@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>แจ้งเรื่องพบของ</title>
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -91,7 +90,7 @@
 
     <div class="form-group">
       <label for="brand">ยี่ห้อ / เลขบนบัตร (ถ้ามี)</label>
-      <input type="text" id="brand" name="brand" placeholder="เช่น Student ID 6123456">
+      <input type="text" id="brand" name="brand" placeholder="เช่น Student ID 6612345678">
     </div>
 
     <div class="form-group">
@@ -101,7 +100,7 @@
 
     <div class="form-group">
       <label for="location">สถานที่ที่พบ</label>
-      <input type="text" id="location" name="location" placeholder="เช่น อาคาร U2" required>
+      <input type="text" id="location" name="location" placeholder="เช่น อาคาร บร3" required>
     </div>
 
     <div class="form-group">
@@ -109,16 +108,19 @@
       <input type="datetime-local" id="datetime" name="datetime" required>
     </div>
 
+    <div class="form-group">
+      <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
+      <input type="file" id="itemImage" name="itemImage" accept="image/*">
+    </div>
+
     <button type="button" id="submitBtn">ส่งข้อมูล</button>
     <p id="status" style="text-align:center;margin-top:10px;"></p>
   </form>
 
+  <script src="liff.js"></script>
   <script>
     async function main() {
-      await liff.init({ liffId: "2008305063-P2NpboxX" });
-
-      if (!liff.isLoggedIn()) liff.login();
-      const profile = await liff.getProfile();
+      const profile = await initializeLiff("2008305063-P2NpboxX");
 
       document.getElementById("submitBtn").onclick = async () => {
         const data = {
@@ -128,18 +130,15 @@
           brand: document.getElementById("brand").value,
           details: document.getElementById("details").value,
           location: document.getElementById("location").value,
-          datetime: document.getElementById("datetime").value
+          datetime: document.getElementById("datetime").value,
         };
 
-        const res = await fetch("https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
+        const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec";
+        const success = await sendDataToGoogleSheet(data, url);
 
-        if (res.ok) {
+        if (success) {
           document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้วค่ะ";
-          liff.sendMessages([{ type: "text", text: "ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ" }]);
+          await sendLiffMessage("ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ");
         } else {
           document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
         }

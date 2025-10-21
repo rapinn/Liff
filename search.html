@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -70,6 +70,33 @@
       margin-top: 15px;
       background: #fdfdfd;
     }
+
+    /* Add new styles for additional fields */
+    .search-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .action-buttons button {
+      flex: 1;
+    }
+
+    .report-lost-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .report-lost-btn:hover {
+      background-color: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -77,35 +104,59 @@
   <div class="search-box">
     <h1>🔍 ค้นหาของสูญหาย</h1>
 
-    <div class="form-group">
-      <label for="category">เลือกหมวดหมู่:</label>
-      <select id="category">
-        <option value="">ทั้งหมด</option>
-        <option>บัตร</option>
-        <option>โทรศัพท์</option>
-        <option>อุปกรณ์อิเล็กทรอนิกส์</option>
-        <option>เครื่องเขียน</option>
-        <option>อื่น ๆ</option>
-      </select>
+    <div class="search-options">
+      <div class="form-group">
+        <label for="itemName">ชื่อสิ่งของ:</label>
+        <input type="text" id="itemName" placeholder="เช่น กระเป๋า, โทรศัพท์">
+      </div>
+
+      <div class="form-group">
+        <label for="location">สถานที่:</label>
+        <input type="text" id="location" placeholder="เช่น อาคาร A, โรงอาหาร">
+      </div>
+
+      <div class="form-group">
+        <label for="date">วันที่:</label>
+        <input type="date" id="date">
+      </div>
+
+      <div class="form-group">
+        <label for="details">รายละเอียดเพิ่มเติม:</label>
+        <input type="text" id="details" placeholder="เช่น สีดำ, มีสติ๊กเกอร์">
+      </div>
+
+      <div class="form-group">
+        <label for="category">หมวดหมู่:</label>
+        <select id="category">
+          <option value="">ทั้งหมด</option>
+          <option>บัตร</option>
+          <option>โทรศัพท์</option>
+          <option>อุปกรณ์อิเล็กทรอนิกส์</option>
+          <option>เครื่องเขียน</option>
+          <option>อื่น ๆ</option>
+        </select>
+      </div>
     </div>
 
-    <div class="form-group">
-      <label for="keyword">ค้นหาคำสำคัญ (เช่น สี, ยี่ห้อ):</label>
-      <input type="text" id="keyword" placeholder="เช่น iPhone, สีดำ">
+    <div class="action-buttons">
+      <button id="searchBtn">ค้นหา</button>
+      <button class="report-lost-btn" onclick="window.location.href='lost.html'">แจ้งของหาย</button>
     </div>
 
-    <button id="searchBtn">ค้นหา</button>
     <div id="results"></div>
   </div>
 
-  <script>
+  <!-- <script>
     async function main() {
       await liff.init({ liffId: "2008305063-057r9J1Y" });
       if (!liff.isLoggedIn()) liff.login();
 
       document.getElementById("searchBtn").onclick = async () => {
+        const itemName = document.getElementById("itemName").value;
+        const location = document.getElementById("location").value;
+        const date = document.getElementById("date").value;
+        const details = document.getElementById("details").value;
         const category = document.getElementById("category").value;
-        const keyword = document.getElementById("keyword").value;
 
         const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec?search=1";
         const res = await fetch(url);
@@ -113,7 +164,10 @@
 
         const filtered = items.filter(i =>
           (!category || i.category === category) &&
-          (!keyword || i.details.includes(keyword) || i.brand.includes(keyword))
+          (!itemName || i.details.toLowerCase().includes(itemName.toLowerCase())) &&
+          (!location || i.location.toLowerCase().includes(location.toLowerCase())) &&
+          (!date || i.datetime.includes(date)) &&
+          (!details || i.details.toLowerCase().includes(details.toLowerCase()))
         );
 
         const list = filtered.map(i => `
@@ -135,6 +189,6 @@
     }
 
     main();
-  </script>
+  </script> -->
 </body>
-</html>
+</html> -->

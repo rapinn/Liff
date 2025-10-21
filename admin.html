@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบจัดการ - รายการสิ่งของที่เก็บได้</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #bc3030;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .filter-section {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+    }
+
+    .filter-section select, .filter-section input, .filter-section button {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table th, table td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+    }
+
+    table th {
+      background-color: #f9f9f9;
+      font-weight: bold;
+    }
+
+    .status {
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    .status.waiting {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .status.received {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .status.expiring {
+      background-color: #ffa500; /* สีส้ม */
+      color: white;
+    }
+
+    .status.expired {
+      background-color: #dc3545; /* สีแดง */
+      color: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      background-color: #ffd13f;
+      color: black;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: bold;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #da8012;
+    }
+
+    @media (max-width: 768px) {
+      .filter-section {
+        flex-direction: column;
+      }
+
+      .filter-section select, .filter-section input, .filter-section button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 ระบบจัดการ - รายการสิ่งของที่เก็บได้</h1>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+      <select id="statusFilter">
+        <option value="">-- เลือกสถานะ --</option>
+        <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
+        <option value="received">รับคืนแล้ว (Received)</option>
+        <option value="expiring">ใกล้ถึง 3 เดือน (Expiring)</option>
+        <option value="expired">หมดอายุแล้ว (Expired)</option>
+      </select>
+      <input type="date" id="expiryFilter" placeholder="กรองตามวันที่หมดอายุ">
+      <button onclick="applyFilters()">กรองข้อมูล</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ลำดับ</th>
+          <th>หมวดหมู่ (Category)</th>
+          <th>รูปภาพ (Picture)</th>
+          <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
+          <th>รุ่น / เลขบัตร (Model)</th>
+          <th>รายละเอียดเพิ่มเติม (More Details)</th>
+          <th>วันที่ (Date)</th>
+          <th>เวลา (Time)</th>
+          <th>สถานที่พบ (Location)</th>
+          <th>สถานะ (Status)</th>
+          <th>การจัดการ (Actions)</th>
+        </tr>
+      </thead>
+      <tbody id="adminTableBody">
+        <!-- รายการจะถูกเพิ่มที่นี่ -->
+      </tbody>
+    </table>
+  </div>
+
+  <script src="liff.js"></script>
+  <script>
+    async function main() {
+      const profile = await initializeLiff("2008305063-P2NpboxX");
+
+      // ตัวอย่างการใช้งาน LIFF ในหน้า Admin
+      console.log(`Welcome, ${profile.displayName}`);
+    }
+
+    main();
+
+    // ดึงข้อมูลจาก localStorage
+    const foundItems = JSON.parse(localStorage.getItem("foundItems")) || [];
+
+    // ฟังก์ชันแสดงรายการในตาราง
+    function renderAdminTable(items) {
+      const tableBody = document.getElementById("adminTableBody");
+      tableBody.innerHTML = items.map((item, index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${item.category}</td>
+          <td>
+            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width: 50px; height: 50px; object-fit: cover;">` : "ไม่มี"}
+          </td>
+          <td>${item.brand || "ไม่มี"}</td>
+          <td>${item.details || "ไม่มี"}</td>
+          <td>${item.details || "ไม่มี"}</td>
+          <td>${item.date}</td>
+          <td>${item.time}</td>
+          <td>${item.location}</td>
+          <td>
+            <span class="status ${getStatusClass(item)}">
+              ${getStatusText(item)}
+            </span>
+          </td>
+          <td>
+            ${getManagementActions(item)}
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // ฟังก์ชันสำหรับแสดงการจัดการในช่อง Actions
+    function getManagementActions(item) {
+      if (isExpired(item)) {
+        return `<span class="status expired">หมดอายุแล้ว (Expired)</span>`;
+      } else if (isExpiring(item)) {
+        return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
+      } else if (item.status === "waiting") {
+        return `<button onclick="updateStatus(${item.id}, 'received')">รับคืนแล้ว</button>`;
+      }
+      return "ไม่มีการจัดการ";
+    }
+
+    // ฟังก์ชันเปลี่ยนสถานะ
+    function updateStatus(id, newStatus) {
+      const item = foundItems.find(item => item.id === id);
+      if (item) {
+        item.status = newStatus;
+        localStorage.setItem("foundItems", JSON.stringify(foundItems));
+        applyFilters();
+      }
+    }
+
+    // ฟังก์ชันกรองข้อมูล
+    function applyFilters() {
+      const statusFilter = document.getElementById("statusFilter").value;
+      const expiryFilter = document.getElementById("expiryFilter").value;
+
+      const filteredItems = foundItems.filter(item => {
+        const isStatusMatch = !statusFilter || getStatusClass(item) === statusFilter;
+        const isExpiryMatch = !expiryFilter || new Date(item.date) <= new Date(expiryFilter);
+        return isStatusMatch && isExpiryMatch;
+      });
+
+      renderAdminTable(filteredItems);
+    }
+
+    // ฟังก์ชันตรวจสอบสถานะ
+    function getStatusClass(item) {
+      if (item.status === "received") return "received";
+      return "waiting"; // รอมารับคืน
+    }
+
+    function getStatusText(item) {
+      if (item.status === "received") return "รับคืนแล้ว (Received)";
+      return "รอมารับคืน (Waiting for pick up)";
+    }
+
+    // ฟังก์ชันตรวจสอบ "ใกล้ถึง 3 เดือน"
+    function isExpiring(item) {
+      const expiryDate = new Date(item.date);
+      const currentDate = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+
+      return expiryDate <= currentDate && expiryDate > threeMonthsAgo; // ใกล้ถึง 3 เดือน
+    }
+
+    // ฟังก์ชันตรวจสอบ "หมดอายุแล้ว"
+    function isExpired(item) {
+      const expiryDate = new Date(item.date);
+      const currentDate = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+
+      return expiryDate < threeMonthsAgo; // หมดอายุแล้ว
+    }
+
+    // เรียกฟังก์ชันแสดงรายการ
+    applyFilters();
+  </script>
+</body>
+</html>

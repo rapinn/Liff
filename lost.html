@@ -3,133 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แจ้งของหาย</title>
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <title>ค้นหาและแจ้งของหาย</title>
     <style>
         body {
             font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 20px;
             background-color: #bc3030;
+            color: #333;
         }
 
-        form {
-            max-width: 600px;
+        .container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 25px;
-            background-color: #fff;
+            background: #fff;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
         }
 
-        h1 { text-align: center; color: #2c3e50; }
-        p.intro { text-align: center; color: #555; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-
-        label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input, textarea, select {
-            width: 100%; padding: 12px; border: 1px solid #ccc;
-            border-radius: 4px; font-size: 16px; box-sizing: border-box;
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
         }
-        input[type="file"] { font-size: 16px; }
+
+        .section {
+            margin-bottom: 30px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, textarea, select, button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
         button {
-            width: 100%; padding: 15px;
-            background-color: #ffd13f; color: black;
-            border: none; border-radius: 4px;
-            cursor: pointer; font-size: 18px; font-weight: bold;
+            width: 100%;
+            padding: 15px;
+            background-color: #ffd13f;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.2s;
         }
-        button:hover { background-color: #da8012; }
-        #status { text-align: center; margin-top: 15px; font-weight: bold; }
+
+        button:hover {
+            background-color: #da8012;
+        }
+
+        #adminTableContainer {
+            margin-top: 20px;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        table th {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+
+        .status.waiting {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .status.received {
+            background-color: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <form id="lostItemForm">
-        <h1>📝 แบบฟอร์มแจ้งของหาย</h1>
-        <p class="intro">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อให้เจ้าหน้าที่ช่วยตามของให้คุณได้ค่ะ</p>
+    <div class="container">
+        <h1>🔍 ค้นหาและแจ้งของหาย 📝</h1>
 
-        <div class="form-group">
-            <label for="itemName">สิ่งของที่คุณหายคืออะไร?</label>
-            <input type="text" id="itemName" name="itemName" placeholder="เช่น กระเป๋าสตางค์, โทรศัพท์" required>
+        <!-- Search Section -->
+        <div class="section" id="searchSection">
+            <h2>🔍 ค้นหาของหาย</h2>
+            <p class="intro">กรุณากรอกข้อมูลสิ่งของที่สูญหายของคุณ<br>เราจะช่วยตรวจสอบให้ค่ะ</p>
+
+            <div class="form-group">
+                <label for="searchItemName">ชื่อสิ่งของ:</label>
+                <input type="text" id="searchItemName" placeholder="เช่น กระเป๋า, โทรศัพท์">
+            </div>
+            <div class="form-group">
+                <label for="searchLocation">สถานที่:</label>
+                <input type="text" id="searchLocation" placeholder="เช่น อาคาร SC3, โรงอาหาร SC">
+            </div>
+            <div class="form-group">
+                <label for="searchDate">วันที่:</label>
+                <input type="date" id="searchDate">
+            </div>
+            <div class="form-group">
+                <label for="searchDetails">รายละเอียดเพิ่มเติม:</label>
+                <input type="text" id="searchDetails" placeholder="เช่น สีดำ, มีสติ๊กเกอร์ติด">
+            </div>
+            <button id="searchBtn">ค้นหาของหาย</button>
         </div>
 
-        <div class="form-group">
-            <label for="brand">ยี่ห้อ / หมายเลขบัตร (ถ้ามี)</label>
-            <input type="text" id="brand" name="brand" placeholder="เช่น Apple, Samsonite, 1234-5678-xxxx">
+        <!-- Admin Table Section -->
+        <div id="adminTableContainer">
+          <h2>📋 รายการสิ่งของที่พบ</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ลำดับ</th>
+                <th>หมวดหมู่ (Category)</th>
+                <th>รูปภาพ (Picture)</th>
+                <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
+                <th>รุ่น / เลขบัตร (Model)</th>
+                <th>รายละเอียดเพิ่มเติม (More Details)</th>
+                <th>วันที่ (Date)</th>
+                <th>เวลา (Time)</th>
+                <th>สถานที่พบ (Location)</th>
+                <th>สถานะ (Status)</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody">
+              <!-- รายการจะถูกเพิ่มที่นี่ -->
+            </tbody>
+          </table>
         </div>
 
-        <div class="form-group">
-            <label for="description">ลักษณะเด่น / รายละเอียดเพิ่มเติม</label>
-            <textarea id="description" name="description" rows="4" placeholder="เช่น โทรศัพท์สีฟ้า มีรอยขีดด้านหลัง" required></textarea>
+        <!-- Button to Show Report Form -->
+        <button id="showReportFormBtn">แบบฟอร์มแจ้งของหาย</button>
+
+        <!-- Report Lost Item Section -->
+        <div class="section" id="reportSection" style="display: none;">
+            <h2>📝 แบบฟอร์มแจ้งของหาย</h2>
+            <p class="intro">กรุณากรอกข้อมูลให้ครบถ้วนที่สุด<br>เพื่อให้เจ้าหน้าที่ติดตามของให้คุณได้ง่ายขึ้นนะคะ</p>
+
+            <div class="form-group">
+                <label for="itemName">สิ่งของที่คุณหายคืออะไร?</label>
+                <input type="text" id="itemName" name="itemName" placeholder="เช่น กระเป๋าสตางค์, โทรศัพท์, บัตรนักศึกษา" required>
+            </div>
+
+            <div class="form-group">
+                <label for="brand">ยี่ห้อ / หมายเลขบัตร (ถ้ามี)</label>
+                <input type="text" id="brand" name="brand" placeholder="เช่น Samsung, 1234-5678-xxxx">
+            </div>
+
+            <div class="form-group">
+                <label for="description">ลักษณะเด่น (สี, รุ่น, ตำหนิ)</label>
+                <textarea id="description" name="description" rows="4" placeholder="เช่น โทรศัพท์สีฟ้า มีรอยขีดด้านหลัง, บัตรมีพวงกุญแจตุ๊กตา" required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="location">สถานที่ที่คาดว่าทำหาย</label>
+                <input type="text" id="location" name="location" placeholder="เช่น ห้องเรียน, โรงอาหาร, ลานจอดรถ, ชั้น 3 หอสมุดป๋วย" required>
+            </div>
+
+            <div class="form-group">
+                <label for="datetime">วันที่และเวลา</label>
+                <input type="datetime-local" id="datetime" name="datetime" required>
+            </div>
+
+            <button id="reportBtn">ส่งข้อมูลแจ้งของหาย</button>
         </div>
+    </div>
 
-        <div class="form-group">
-            <label for="location">สถานที่ที่คาดว่าทำหาย</label>
-            <input type="text" id="location" name="location" placeholder="เช่น ห้องเรียน, โรงอาหาร, ชั้น 3 หอสมุดป๋วย" required>
-        </div>
-
-        <div class="form-group">
-            <label for="lostDate">วันที่คาดว่าทำหาย</label>
-            <input type="date" id="lostDate" name="lostDate" required>
-        </div>
-
-        <div class="form-group">
-            <label for="lostTime">เวลาโดยประมาณ</label>
-            <input type="time" id="lostTime" name="lostTime" required>
-        </div>
-
-        <div class="form-group">
-            <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
-            <input type="file" id="itemImage" name="itemImage" accept="image/*">
-        </div>
-
-        <button type="button" id="submitBtn">ส่งข้อมูลแจ้งของหาย</button>
-        <p id="status"></p>
-    </form>
-
+    <script src="liff.js"></script>
     <script>
-        async function main() {
-            await liff.init({ liffId: "2008305063-oQwEaGVW" }); // 🔹 เปลี่ยนเป็น LIFF ID ของคุณ
-            if (!liff.isLoggedIn()) {
-                //liff.login({ redirectUri: window.location.href });
-                const myRedirectUri = "https://found-form.vercel.app/lost.html";
-                liff.login({ redirectUri: myRedirectUri });
+      async function main() {
+        const profile = await initializeLiff("2008305063-P2NpboxX");
 
-                return;
-            }
+        document.getElementById("searchBtn").onclick = async () => {
+          const itemName = document.getElementById("searchItemName").value.toLowerCase();
+          const location = document.getElementById("searchLocation").value.toLowerCase();
+          const date = document.getElementById("searchDate").value;
+          const details = document.getElementById("searchDetails").value.toLowerCase();
 
-            const profile = await liff.getProfile();
+          const storedItems = JSON.parse(localStorage.getItem("foundItems")) || [];
+          const results = storedItems.filter(item =>
+            (!itemName || item.category.toLowerCase().includes(itemName)) &&
+            (!location || item.location.toLowerCase().includes(location)) &&
+            (!date || item.date === date) &&
+            (!details || item.details.toLowerCase().includes(details))
+          );
 
-            document.getElementById("submitBtn").onclick = async () => {
-                const formData = {
-                    type: "lost", // ใช้แยกประเภทใน backend
-                    name: profile.displayName,
-                    userId: profile.userId,
-                    itemName: document.getElementById("itemName").value,
-                    brand: document.getElementById("brand").value,
-                    description: document.getElementById("description").value,
-                    location: document.getElementById("location").value,
-                    lostDate: document.getElementById("lostDate").value,
-                    lostTime: document.getElementById("lostTime").value
-                };
+          if (results.length > 0) {
+            renderAdminTable(results);
+            document.getElementById("adminTableContainer").style.display = "block";
+          } else {
+            document.getElementById("adminTableContainer").style.display = "none";
+          }
+        };
+      }
 
-                const res = await fetch("https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(formData)
-                });
+      main();
+    </script>
+    <script>
+        // ซ่อนฟอร์มแจ้งของหายไว้ก่อน
+        const reportSection = document.getElementById("reportSection");
+        const showReportFormBtn = document.getElementById("showReportFormBtn");
 
-                if (res.ok) {
-                    document.getElementById("status").innerText = "✅ แจ้งของหายเรียบร้อยแล้วค่ะ";
-                    await liff.sendMessages([
-                        { type: "text", text: "ฉันได้แจ้งของหายเรียบร้อยแล้วค่ะ" }
-                    ]);
-                    //liff.closeWindow();
-                } else {
-                    document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
-                }
-            };
+        // แสดงฟอร์มแจ้งของหายเมื่อกดปุ่ม
+        showReportFormBtn.addEventListener("click", function () {
+            reportSection.style.display = "block";
+            showReportFormBtn.style.display = "none"; // ซ่อนปุ่มแจ้งของหาย
+        });
+
+        // ฟังก์ชันค้นหา
+        document.getElementById("searchBtn").addEventListener("click", function () {
+          const itemName = document.getElementById("searchItemName").value.toLowerCase();
+          const location = document.getElementById("searchLocation").value.toLowerCase();
+          const date = document.getElementById("searchDate").value;
+          const details = document.getElementById("searchDetails").value.toLowerCase();
+
+          // ดึงข้อมูลจาก localStorage
+          const storedItems = JSON.parse(localStorage.getItem("foundItems")) || [];
+          
+          // กรองข้อมูลที่ตรงกับการค้นหา
+          const results = storedItems.filter(item =>
+            (!itemName || item.category.toLowerCase().includes(itemName)) &&
+            (!location || item.location.toLowerCase().includes(location)) &&
+            (!date || item.date === date) &&
+            (!details || item.details.toLowerCase().includes(details))
+          );
+
+          // แสดงผลลัพธ์
+          if (results.length > 0) {
+            renderAdminTable(results);
+            document.getElementById("adminTableContainer").style.display = "block";
+          } else {
+            document.getElementById("adminTableContainer").style.display = "none";
+          }
+        });
+
+        // ฟังก์ชันแสดงรายการในตาราง
+        function renderAdminTable(items) {
+          const tableBody = document.getElementById("adminTableBody");
+          tableBody.innerHTML = items.map((item, index) => `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${item.category}</td>
+              <td>
+                ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width: 50px; height: 50px; object-fit: cover;">` : "ไม่มี"}
+              </td>
+              <td>${item.brand || "ไม่มี"}</td>
+              <td>${item.details || "ไม่มี"}</td>
+              <td>${item.details || "ไม่มี"}</td>
+              <td>${item.date}</td>
+              <td>${item.time}</td>
+              <td>${item.location}</td>
+              <td>
+                <span class="status ${getStatusClass(item)}">
+                  ${getStatusText(item)}
+                </span>
+              </td>
+            </tr>
+          `).join("");
         }
-        main();
+
+        // ฟังก์ชันตรวจสอบสถานะ
+        function getStatusClass(item) {
+          if (item.status === "received") return "received";
+          return "waiting"; // รอมารับคืน
+        }
+
+        function getStatusText(item) {
+          if (item.status === "received") return "รับคืนแล้ว (Received)";
+          return "รอมารับคืน (Waiting for pick up)";
+        }
     </script>
 </body>
 </html>
