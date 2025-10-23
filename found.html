@@ -103,9 +103,15 @@
       <input type="text" id="location" name="location" placeholder="เช่น อาคาร บร3" required>
     </div>
 
+    <!-- 🔹 แยกวันที่กับเวลาออกเป็นคนละช่อง -->
     <div class="form-group">
-      <label for="datetime">วันที่และเวลา</label>
-      <input type="datetime-local" id="datetime" name="datetime" required>
+      <label for="date">วันที่ที่พบ</label>
+      <input type="date" id="date" name="date" required>
+    </div>
+
+    <div class="form-group">
+      <label for="time">เวลาที่พบ</label>
+      <input type="time" id="time" name="time" required>
     </div>
 
     <div class="form-group">
@@ -113,7 +119,7 @@
       <input type="file" id="itemImage" name="itemImage" accept="image/*">
     </div>
 
-    <button type="button" id="submitBtn">ส่งข้อมูล</button>
+    <button type="button" id="submitBtn">ส่งข้อมูลพบของหาย</button>
     <p id="status" style="text-align:center;margin-top:10px;"></p>
   </form>
 
@@ -130,8 +136,15 @@
           brand: document.getElementById("brand").value,
           details: document.getElementById("details").value,
           location: document.getElementById("location").value,
-          datetime: document.getElementById("datetime").value,
+          date: document.getElementById("date").value,
+          time: document.getElementById("time").value,
         };
+
+        // ตรวจว่ากรอกครบหรือไม่
+        if (!data.category || !data.details || !data.location || !data.date || !data.time) {
+          document.getElementById("status").innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
+          return;
+        }
 
         const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec";
         const success = await sendDataToGoogleSheet(data, url);
