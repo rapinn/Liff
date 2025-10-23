@@ -119,18 +119,46 @@
       <input type="file" id="itemImage" name="itemImage" accept="image/*">
     </div>
 
+    <!-- ✅ ช่องทางติดต่อผู้แจ้ง (ใหม่) -->
+    <div class="form-group">
+      <label for="reporterName">ชื่อผู้แจ้ง</label>
+      <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
+    </div>
+    <div class="form-group">
+      <label for="reporterPhone">เบอร์โทรผู้แจ้ง</label>
+      <input type="tel" id="reporterPhone" placeholder="เช่น 0812345678" required>
+    </div>
+    <div class="form-group">
+      <label for="reporterStudentId">เลขนักศึกษา</label>
+      <input type="text" id="reporterStudentId" placeholder="เช่น 66xxxxxxxx" required>
+    </div>
+
     <button type="button" id="submitBtn">ส่งข้อมูลพบของหาย</button>
     <p id="status" style="text-align:center;margin-top:10px;"></p>
   </form>
 
   <script src="liff.js"></script>
   <script>
+    // Helper: file -> DataURL
+    function readFileAsDataURL(file) {
+      return new Promise((resolve) => {
+        if (!file) return resolve("");
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result || "");
+        reader.onerror = () => resolve("");
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function main() {
       const profile = await initializeLiff("2008305063-P2NpboxX");
 
       document.getElementById("submitBtn").onclick = async () => {
+        const itemImageFile = document.getElementById("itemImage").files?.[0] || null;
+        const itemImage = await readFileAsDataURL(itemImageFile);
+
         const data = {
-          name: profile.displayName,
+          name: profile.displayName, // จาก LIFF
           userId: profile.userId,
           category: document.getElementById("category").value,
           brand: document.getElementById("brand").value,
@@ -138,16 +166,41 @@
           location: document.getElementById("location").value,
           date: document.getElementById("date").value,
           time: document.getElementById("time").value,
+          reporterName: document.getElementById("reporterName").value.trim(),
+          reporterPhone: document.getElementById("reporterPhone").value.trim(),
+          reporterStudentId: document.getElementById("reporterStudentId").value.trim(),
+          itemImage // base64 Data URL
         };
 
         // ตรวจว่ากรอกครบหรือไม่
-        if (!data.category || !data.details || !data.location || !data.date || !data.time) {
+        if (!data.category || !data.details || !data.location || !data.date || !data.time
+            || !data.reporterName || !data.reporterPhone || !data.reporterStudentId) {
           document.getElementById("status").innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
           return;
         }
 
+        // ส่งเข้า Google Sheet (เดิม)
         const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec";
         const success = await sendDataToGoogleSheet(data, url);
+
+        // เก็บลง localStorage (ใช้ใน admin/search)
+        const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
+        foundItems.push({
+          id: Date.now(),
+          category: data.category,
+          brand: data.brand,
+          details: data.details,
+          location: data.location,
+          date: data.date,
+          time: data.time,
+          status: "waiting",
+          itemImage: data.itemImage,
+          reporterName: data.reporterName,
+          reporterPhone: data.reporterPhone,
+          reporterStudentId: data.reporterStudentId,
+          created: new Date().toISOString()
+        });
+        localStorage.setItem("foundItems", JSON.stringify(foundItems));
 
         if (success) {
           document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้วค่ะ";
@@ -155,6 +208,18 @@
         } else {
           document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
         }
+
+        // ล้างฟอร์ม
+        document.getElementById("category").value = "";
+        document.getElementById("brand").value = "";
+        document.getElementById("details").value = "";
+        document.getElementById("location").value = "";
+        document.getElementById("date").value = "";
+        document.getElementById("time").value = "";
+        document.getElementById("reporterName").value = "";
+        document.getElementById("reporterPhone").value = "";
+        document.getElementById("reporterStudentId").value = "";
+        document.getElementById("itemImage").value = "";
       };
     }
 

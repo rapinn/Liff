@@ -74,7 +74,7 @@
             <p class="intro">กรุณากรอกข้อมูลให้ครบถ้วนที่สุด<br>เพื่อให้เจ้าหน้าที่ติดตามของให้คุณได้ง่ายขึ้นนะคะ</p>
 
             <div class="form-group">
-                <label for="itemName">สิ่งของที่คุณหายคืออะไร?</label>
+                <label for="itemName">สิ่งของที่คุณทำหายคืออะไร?</label>
                 <input type="text" id="itemName" name="itemName" placeholder="เช่น กระเป๋าสตางค์, โทรศัพท์, บัตรนักศึกษา" required>
             </div>
             <div class="form-group">
@@ -100,6 +100,26 @@
                 <input type="time" id="time" name="time" required>
             </div>
 
+            <!-- ✅ แนบรูปภาพ (ใหม่) -->
+            <div class="form-group">
+                <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
+                <input type="file" id="itemImage" name="itemImage" accept="image/*">
+            </div>
+
+            <!-- ✅ ช่องทางติดต่อผู้แจ้ง (ใหม่) -->
+            <div class="form-group">
+                <label for="reporterName">ชื่อผู้แจ้ง</label>
+                <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
+            </div>
+            <div class="form-group">
+                <label for="reporterPhone">เบอร์โทรผู้แจ้ง</label>
+                <input type="tel" id="reporterPhone" placeholder="เช่น 0812345678" required>
+            </div>
+            <div class="form-group">
+                <label for="reporterStudentId">เลขนักศึกษา</label>
+                <input type="text" id="reporterStudentId" placeholder="เช่น 66xxxxxxxx" required>
+            </div>
+
             <button id="reportBtn">ส่งข้อมูลแจ้งของหาย</button>
             <p id="status"></p>
         </div>
@@ -107,7 +127,18 @@
 
     <script src="liff.js"></script>
     <script>
-        document.getElementById("reportBtn").addEventListener("click", function () {
+        // Helper: read file as DataURL (base64)
+        function readFileAsDataURL(file) {
+          return new Promise((resolve) => {
+            if (!file) return resolve("");
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result || "");
+            reader.onerror = () => resolve("");
+            reader.readAsDataURL(file);
+          });
+        }
+
+        document.getElementById("reportBtn").addEventListener("click", async function () {
             const itemName = document.getElementById("itemName").value.trim();
             const brand = document.getElementById("brand").value.trim();
             const description = document.getElementById("description").value.trim();
@@ -115,24 +146,35 @@
             const date = document.getElementById("date").value;
             const time = document.getElementById("time").value;
 
-            if (!itemName || !description || !location || !date || !time) {
+            const reporterName = document.getElementById("reporterName").value.trim();
+            const reporterPhone = document.getElementById("reporterPhone").value.trim();
+            const reporterStudentId = document.getElementById("reporterStudentId").value.trim();
+
+            const imageFile = document.getElementById("itemImage").files?.[0] || null;
+            const itemImage = await readFileAsDataURL(imageFile);
+
+            if (!itemName || !description || !location || !date || !time || !reporterName || !reporterPhone || !reporterStudentId) {
                 document.getElementById("status").innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
                 return;
             }
 
             const lostItems = JSON.parse(localStorage.getItem("lostItems") || "[]");
             lostItems.push({
+                id: Date.now(),
                 itemName,
                 brand,
                 description,
                 location,
                 date,
                 time,
+                reporterName,
+                reporterPhone,
+                reporterStudentId,
+                itemImage, // base64 Data URL
+                status: "waiting", // ✅ ตั้งค่าเริ่มต้นให้เป็น waiting (แสดงผลเป็น "สูญหาย")
                 created: new Date().toISOString()
             });
-
             localStorage.setItem("lostItems", JSON.stringify(lostItems));
-
             document.getElementById("status").innerText = "✅ ส่งข้อมูลแจ้งของหายเรียบร้อยแล้ว";
 
             // ล้างค่าฟอร์มหลังส่ง
@@ -142,6 +184,10 @@
             document.getElementById("location").value = "";
             document.getElementById("date").value = "";
             document.getElementById("time").value = "";
+            document.getElementById("reporterName").value = "";
+            document.getElementById("reporterPhone").value = "";
+            document.getElementById("reporterStudentId").value = "";
+            document.getElementById("itemImage").value = "";
         });
     </script>
 </body>

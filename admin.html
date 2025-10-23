@@ -54,18 +54,20 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
-      table-layout: fixed;
+      table-layout: auto; /* เดิม fixed -> เปลี่ยนเป็น auto เพื่อให้คอลัมน์ขยายตามเนื้อหา */
     }
 
     table th, table td {
       border: 1px solid #ccc;
       padding: 10px;
       text-align: center;
-      vertical-align: middle;
-      word-break: break-word;      /* ตัดคำเมื่อยาวเกินกรอบ */
-      overflow-wrap: break-word;   /* รองรับการตัดคำ */
-      white-space: normal;         /* ให้ขึ้นบรรทัดใหม่ได้ */
-      max-width: 150px;            /* จำกัดความกว้างของเซลล์ */
+      vertical-align: top;   /* ให้เนื้อหาชิดบนเมื่อหลายบรรทัด */
+      white-space: normal;   /* อนุญาตให้ตัดบรรทัด */
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      hyphens: auto;         /* ให้แบ่งคำยาว ๆ ได้ (บางเบราว์เซอร์) */
+      /* ลบ max-width เดิมออก เพื่อให้คอลัมน์ขยายได้ */
+      max-width: none;
     }
 
     table th {
@@ -362,6 +364,21 @@
 
     <div class="table-wrapper">
       <table>
+        <!-- เพิ่ม colgroup เพื่อกำหนดแนวกว้างโดยประมาณ (ปรับได้ตามต้องการ) -->
+        <colgroup>
+          <col style="width:60px">
+          <col style="width:160px">
+          <col style="width:100px">
+          <col style="width:160px">
+          <col style="width:160px">
+          <col style="width:260px">
+          <col style="width:140px">
+          <col style="width:120px">
+          <col style="width:180px">
+          <col style="width:260px">
+          <col style="width:200px">
+          <col style="width:140px">
+        </colgroup>
         <thead>
           <tr>
             <th>ลำดับ</th>
@@ -373,38 +390,13 @@
             <th>วันที่ (Date)</th>
             <th>เวลา (Time)</th>
             <th>สถานที่พบ (Location)</th>
-            <th>สถานะ (Status)</th>
+            <th>รายละเอียดผู้แจ้ง</th>
             <th>การจัดเก็บและครบกำหนด (Record)</th>
+            <th>สถานะ (Status)</th>
           </tr>
         </thead>
         <tbody id="adminTableBody">
-          <!-- ตัวอย่างโครงสร้างใหม่ -->
-          <!-- ใน renderAdminTable ให้ปรับเป็นแบบนี้ -->
-          <tr>
-            <td data-label="ลำดับ">${index + 1}</td>
-            <td data-label="หมวดหมู่">${item.category}</td>
-            <td data-label="รูปภาพ">
-              ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width: 50px; height: 50px; object-fit: cover;">` : "ไม่มี"}
-            </td>
-            <td data-label="ยี่ห้อ / ชื่อในบัตร">${item.brand || "ไม่มี"}</td>
-            <td data-label="รุ่น / เลขบัตร">${item.details || "ไม่มี"}</td>
-            <td data-label="รายละเอียดเพิ่มเติม">${item.details || "ไม่มี"}</td>
-            <td>
-              <div class="date-status-block">
-                <div class="date-block" data-label="วันที่">${item.date}</div>
-                <div class="status-block" data-label="สถานะ">
-                  <span class="status ${getStatusClass(item)}">
-                    ${getStatusText(item)}
-                  </span>
-                </div>
-              </div>
-            </td>
-            <td data-label="เวลา">${item.time}</td>
-            <td data-label="สถานที่พบ">${item.location}</td>
-            <td data-label="การจัดการ">
-              ${getManagementActions(item)}
-            </td>
-          </tr>
+          <!-- จะถูกเติมโดยสคริปต์ -->
         </tbody>
       </table>
     </div>
@@ -413,124 +405,183 @@
   <script src="liff.js"></script>
   <script>
     async function main() {
-      const profile = await initializeLiff("2008305063-P2NpboxX");
-
-      // ตัวอย่างการใช้งาน LIFF ในหน้า Admin
-      console.log(`Welcome, ${profile.displayName}`);
+      try {
+        const profile = await initializeLiff("2008305063-P2NpboxX");
+        console.log(`Welcome, ${profile.displayName}`);
+      } catch (e) {
+        console.warn('LIFF init skipped:', e);
+      }
     }
-
     main();
 
-    // ดึงข้อมูลจาก localStorage
-    const foundItems = JSON.parse(localStorage.getItem("foundItems")) || [];
+    // -------- Load & normalize from both stores --------
+    function loadFoundRaw() {
+      try { return JSON.parse(localStorage.getItem('foundItems')) || []; } catch { return []; }
+    }
+    function loadLostRaw() {
+      try { return JSON.parse(localStorage.getItem('lostItems')) || []; } catch { return []; }
+    }
+    function saveFoundRaw(items) {
+      localStorage.setItem('foundItems', JSON.stringify(items));
+    }
+    function saveLostRaw(items) {
+      localStorage.setItem('lostItems', JSON.stringify(items));
+    }
 
-    // ฟังก์ชันแสดงรายการในตาราง
+    function normalizeFound(item) {
+      return {
+        id: item.id,
+        source: 'found',
+        category: item.category || '-',         // จาก found
+        brand: item.brand || '-',
+        details: item.details || '-',           // รายละเอียด
+        location: item.location || '-',
+        date: item.date || '',
+        time: item.time || '',
+        status: item.status || 'waiting',
+        itemImage: item.itemImage || '',
+        reporterName: item.reporterName || '-',
+        reporterPhone: item.reporterPhone || '-',
+        reporterStudentId: item.reporterStudentId || '-',
+        created: item.created || new Date().toISOString()
+      };
+    }
+
+    function normalizeLost(item) {
+      // lost เก็บชื่อสิ่งของใน itemName และรายละเอียดใน description
+      return {
+        id: item.id,
+        source: 'lost',
+        category: item.itemName || '-',         // ใช้ชื่อสิ่งของแสดงที่คอลัมน์หมวด/ชื่อ
+        brand: item.brand || '-',
+        details: item.description || '-',       // แปลงเป็น details ให้ตารางเดียวกัน
+        location: item.location || '-',
+        date: item.date || '',
+        time: item.time || '',
+        status: item.status || 'waiting',       // หากไม่มี ให้ waiting
+        itemImage: item.itemImage || '',
+        reporterName: item.reporterName || '-',
+        reporterPhone: item.reporterPhone || '-',
+        reporterStudentId: item.reporterStudentId || '-',
+        created: item.created || new Date().toISOString()
+      };
+    }
+
+    function loadAllItems() {
+      const f = loadFoundRaw().map(normalizeFound);
+      const l = loadLostRaw().map(normalizeLost);
+      // เรียงใหม่ตามเวลาเพิ่ม (ล่าสุดก่อน)
+      return [...f, ...l].sort((a, b) => (b.id || 0) - (a.id || 0));
+    }
+
+    // -------- Helpers --------
+    function getStatusClass(item) {
+      return item.status === 'received' ? 'received' : 'waiting';
+    }
+    function getStatusText(item) {
+      const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
+      return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
+    }
+    function isExpiring(item) {
+      if (!item.date) return false;
+      const d = new Date(item.date);
+      const now = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(now.getMonth() - 3);
+      return d <= now && d > threeMonthsAgo;
+    }
+    function isExpired(item) {
+      if (!item.date) return false;
+      const d = new Date(item.date);
+      const now = new Date();
+      const threeMonthsAgo = new Date();
+      threeMonthsAgo.setMonth(now.getMonth() - 3);
+      return d < threeMonthsAgo;
+    }
+
+    // -------- Render --------
     function renderAdminTable(items) {
       const tableBody = document.getElementById("adminTableBody");
+      if (!tableBody) return;
+
+      if (!items.length) {
+        tableBody.innerHTML = `<tr><td colspan="12" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
+        return;
+      }
+
       tableBody.innerHTML = items.map((item, index) => `
         <tr>
           <td data-label="ลำดับ">${index + 1}</td>
-          <td data-label="หมวดหมู่">${item.category}</td>
-          <td data-label="รูปภาพ">
-            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width: 50px; height: 50px; object-fit: cover;">` : "ไม่มี"}
+          <td data-label="หมวดหมู่ (Category)">${item.category}</td>
+          <td data-label="รูปภาพ (Picture)">
+            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
           </td>
-          <td data-label="ยี่ห้อ / ชื่อในบัตร">${item.brand || "ไม่มี"}</td>
-          <td data-label="รุ่น / เลขบัตร">${item.details || "ไม่มี"}</td>
-          <td data-label="รายละเอียดเพิ่มเติม">${item.details || "ไม่มี"}</td>
-          <td>
-            <div class="date-status-block">
-              <div class="date-block" data-label="วันที่">${item.date}</div>
-              <div class="status-block" data-label="สถานะ">
-                <span class="status ${getStatusClass(item)}">
-                  ${getStatusText(item)}
-                </span>
-              </div>
-            </div>
+          <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
+          <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
+          <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
+          <td data-label="วันที่ (Date)">${item.date || "-"}</td>
+          <td data-label="เวลา (Time)">${item.time || "-"}</td>
+          <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
+          <td data-label="รายละเอียดผู้แจ้ง">
+            <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
+            <div><strong>โทร:</strong> ${item.reporterPhone || "-"}</div>
+            <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
           </td>
-          <td data-label="เวลา">${item.time}</td>
-          <td data-label="สถานที่พบ">${item.location}</td>
-          <td data-label="การจัดการ">
-            ${getManagementActions(item)}
+          <td data-label="การจัดเก็บและครบกำหนด (Record)">${getManagementActions(item)}</td>
+          <td data-label="สถานะ (Status)">
+            <span class="status ${getStatusClass(item)}">${getStatusText(item)}</span>
           </td>
         </tr>
       `).join("");
     }
 
-    // ฟังก์ชันสำหรับแสดงการจัดการในช่อง Actions
     function getManagementActions(item) {
       if (isExpired(item)) {
         return `<span class="status expired">หมดอายุแล้ว (Expired)</span>`;
       } else if (isExpiring(item)) {
         return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
-      } else if (item.status === "waiting") {
-        return `
-          <button onclick="updateStatus(${item.id}, 'received')">รับคืนแล้ว</button>
-        `;
-      } else if (item.status === "received") {
-        return `
-          <button onclick="updateStatus(${item.id}, 'waiting')">รอมารับคืน</button>
-        `;
       }
-      return "ไม่มีการจัดการ";
+      const toggleTo = item.status === 'received' ? 'waiting' : 'received';
+      const btnText = item.status === 'received' ? 'รอมารับคืน' : 'รับคืนแล้ว';
+      return `<button onclick="updateStatus(${item.id}, '${item.source}', '${toggleTo}')">${btnText}</button>`;
     }
 
-    // ฟังก์ชันเปลี่ยนสถานะ
-    function updateStatus(id, newStatus) {
-      const item = foundItems.find(item => item.id === id);
-      if (item) {
-        item.status = newStatus;
-        localStorage.setItem("foundItems", JSON.stringify(foundItems));
-        applyFilters(); // อัปเดตตารางหลังเปลี่ยนสถานะ
+    // -------- Update back to correct store --------
+    function updateStatus(id, source, newStatus) {
+      if (source === 'found') {
+        const arr = loadFoundRaw();
+        const i = arr.findIndex(x => String(x.id) === String(id));
+        if (i !== -1) {
+          arr[i].status = newStatus;
+          saveFoundRaw(arr);
+        }
+      } else if (source === 'lost') {
+        const arr = loadLostRaw();
+        const i = arr.findIndex(x => String(x.id) === String(id));
+        if (i !== -1) {
+          arr[i].status = newStatus;
+          saveLostRaw(arr);
+        }
       }
+      applyFilters(); // re-render
     }
 
-    // ฟังก์ชันกรองข้อมูล
+    // -------- Filters --------
     function applyFilters() {
-      const statusFilter = document.getElementById("statusFilter").value;
-      const expiryFilter = document.getElementById("expiryFilter").value;
+      const statusFilter = document.getElementById("statusFilter")?.value || '';
+      const expiryFilter = document.getElementById("expiryFilter")?.value || '';
 
-      const filteredItems = foundItems.filter(item => {
+      const all = loadAllItems();
+      const filtered = all.filter(item => {
         const isStatusMatch = !statusFilter || getStatusClass(item) === statusFilter;
-        const isExpiryMatch = !expiryFilter || new Date(item.date) <= new Date(expiryFilter);
+        const isExpiryMatch = !expiryFilter || (item.date && new Date(item.date) <= new Date(expiryFilter));
         return isStatusMatch && isExpiryMatch;
       });
-
-      renderAdminTable(filteredItems);
+      renderAdminTable(filtered);
     }
 
-    // ฟังก์ชันตรวจสอบสถานะ
-    function getStatusClass(item) {
-      if (item.status === "received") return "received";
-      return "waiting"; // รอมารับคืน
-    }
-
-    function getStatusText(item) {
-      if (item.status === "received") return "รับคืนแล้ว (Received)";
-      return "รอมารับคืน (Waiting for pick up)";
-    }
-
-    // ฟังก์ชันตรวจสอบ "ใกล้ถึง 3 เดือน"
-    function isExpiring(item) {
-      const expiryDate = new Date(item.date);
-      const currentDate = new Date();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-
-      return expiryDate <= currentDate && expiryDate > threeMonthsAgo; // ใกล้ถึง 3 เดือน
-    }
-
-    // ฟังก์ชันตรวจสอบ "หมดอายุแล้ว"
-    function isExpired(item) {
-      const expiryDate = new Date(item.date);
-      const currentDate = new Date();
-      const threeMonthsAgo = new Date();
-      threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-
-      return expiryDate < threeMonthsAgo; // หมดอายุแล้ว
-    }
-
-    // เรียกฟังก์ชันแสดงรายการ
-    applyFilters();
+    // First render
+    document.addEventListener('DOMContentLoaded', applyFilters);
   </script>
 </body>
 </html>
