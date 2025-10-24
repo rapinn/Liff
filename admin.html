@@ -268,6 +268,7 @@
       <table>
         <colgroup>
           <col style="width:60px">
+          <col style="width:120px">   <!-- เพิ่มคอลัมน์ใหม่ -->
           <col style="width:140px">
           <col style="width:100px">
           <col style="width:140px">
@@ -283,6 +284,7 @@
         <thead>
           <tr>
             <th>ลำดับ</th>
+            <th>ประเภทการแจ้ง (Type)</th>  <!-- คอลัมน์ใหม่ -->
             <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
             <th>รูปภาพ (Picture)</th>
             <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
@@ -333,6 +335,7 @@
       return {
         id: item.id,
         source: 'found',
+        type: 'พบของ',  // เพิ่ม type
         category: item.category || '-',
         brand: item.brand || '-',
         details: item.details || '-',
@@ -352,6 +355,7 @@
       return {
         id: item.id,
         source: 'lost',
+        type: 'ของหาย',  // เพิ่ม type
         category: item.itemName || '-',
         brand: item.brand || '-',
         details: item.description || '-',
@@ -387,25 +391,21 @@
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
     }
 
-    // ตรวจสอบว่าใกล้ถึง 3 เดือน (2-3 เดือนหลังจากวันที่พบ)
     function isExpiring(item) {
       if (!item.date) return false;
       const foundDate = new Date(item.date);
       const now = new Date();
       const diffTime = now - foundDate;
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      // ใกล้ถึง 3 เดือน = 60-90 วัน (ประมาณ 2-3 เดือน)
       return diffDays >= 60 && diffDays < 90;
     }
 
-    // ตรวจสอบว่าหมดอายุแล้ว (เกิน 3 เดือนหลังจากวันที่พบ)
     function isExpired(item) {
       if (!item.date) return false;
       const foundDate = new Date(item.date);
       const now = new Date();
       const diffTime = now - foundDate;
       const diffDays = diffTime / (1000 * 60 * 60 * 24);
-      // หมดอายุ = เกิน 90 วัน (3 เดือน)
       return diffDays >= 90;
     }
 
@@ -415,13 +415,18 @@
       if (!tableBody) return;
 
       if (!items.length) {
-        tableBody.innerHTML = `<tr><td colspan="12" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
         return;
       }
 
       tableBody.innerHTML = items.map((item, index) => `
         <tr>
           <td data-label="ลำดับ">${index + 1}</td>
+          <td data-label="ประเภทการแจ้ง (Type)">
+            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:${item.type === 'พบของ' ? '#dcfce7' : '#fef3c7'};color:${item.type === 'พบของ' ? '#166534' : '#92400e'};">
+              ${item.type}
+            </span>
+          </td>
           <td data-label="หมวดหมู่ (Category)">${item.category}</td>
           <td data-label="รูปภาพ (Picture)">
             ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
@@ -483,14 +488,12 @@
 
       const all = loadAllItems();
       const filtered = all.filter(item => {
-        // Filter ตาม status
         let isStatusMatch = true;
         if (statusFilter) {
           const itemStatusClass = getStatusClass(item);
           isStatusMatch = itemStatusClass === statusFilter;
         }
 
-        // Filter ตามวันที่หมดอายุ (ถ้าเลือก)
         let isExpiryMatch = true;
         if (expiryFilter) {
           if (!item.date) {
@@ -498,10 +501,8 @@
           } else {
             const foundDate = new Date(item.date);
             const filterDate = new Date(expiryFilter);
-            // เพิ่ม 90 วัน (3 เดือน) จากวันที่พบ
             const expiryDate = new Date(foundDate);
             expiryDate.setDate(expiryDate.getDate() + 90);
-            // กรองรายการที่หมดอายุก่อนหรือเท่ากับวันที่เลือก
             isExpiryMatch = expiryDate <= filterDate;
           }
         }

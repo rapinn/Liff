@@ -239,6 +239,7 @@
         <table>
           <colgroup>
             <col style="width:60px">
+            <col style="width:120px">   <!-- เพิ่มคอลัมน์ใหม่ -->
             <col style="width:140px">
             <col style="width:100px">
             <col style="width:140px">
@@ -254,6 +255,7 @@
           <thead>
             <tr>
               <th>ลำดับ</th>
+              <th>ประเภทการแจ้ง (Type)</th>  <!-- คอลัมน์ใหม่ -->
               <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
               <th>รูปภาพ (Picture)</th>
               <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
@@ -292,6 +294,7 @@
     function normalizeFound(item) {
       return {
         id: item.id, source: 'found',
+        type: 'พบของ',  // เพิ่ม type
         category: item.category || '-', brand: item.brand || '-',
         details: item.details || '-', location: item.location || '-',
         date: item.date || '', time: item.time || '',
@@ -303,6 +306,7 @@
     function normalizeLost(item) {
       return {
         id: item.id, source: 'lost',
+        type: 'ของหาย',  // เพิ่ม type
         category: item.itemName || '-', brand: item.brand || '-',
         details: item.description || '-', location: item.location || '-',
         date: item.date || '', time: item.time || '',
@@ -333,6 +337,11 @@
       tbody.innerHTML = items.map((item, index) => `
         <tr>
           <td data-label="ลำดับ">${index + 1}</td>
+          <td data-label="ประเภทการแจ้ง (Type)">
+            <span style="display:inline-block;padding:4px 8px;border-radius:4px;font-weight:600;background-color:${item.type === 'พบของ' ? '#dcfce7' : '#fef3c7'};color:${item.type === 'พบของ' ? '#166534' : '#92400e'};">
+              ${item.type}
+            </span>
+          </td>
           <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category}</td>
           <td data-label="รูปภาพ (Picture)">
             ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
@@ -343,7 +352,7 @@
           <td data-label="วันที่ (Date)">${item.date || "-"}</td>
           <td data-label="เวลา (Time)">${item.time || "-"}</td>
           <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
-          <td data-label="รายละเอียดผู้แจ้ง">
+          <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
             <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
             <div><strong>โทร:</strong> ${item.reporterPhone || "-"}</div>
             <div><strong>รหัสนักศึกษา:</strong> ${item.reporterStudentId || "-"}</div>
