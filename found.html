@@ -131,7 +131,7 @@
 
     <div class="form-group">
       <label for="itemImage">แนบรูปภาพ (ถ้ามี)</label>
-      <input type="file" id="itemImage" name="itemImage" accept="image/*">
+      <input type="file" id="itemImage" name="itemImage" accept="image/*" capture="environment">
     </div>
 
     <!-- ✅ ช่องทางติดต่อผู้แจ้ง -->
@@ -162,91 +162,167 @@
 
   <script src="liff.js"></script>
   <script>
-    // Helper: file -> DataURL
-    function readFileAsDataURL(file) {
-      return new Promise((resolve) => {
-        if (!file) return resolve("");
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result || "");
-        reader.onerror = () => resolve("");
-        reader.readAsDataURL(file);
-      });
-    }
+  // UI helpers
+  function showStatus(msg, type = 'info') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.style.color = type === 'error' ? '#b91c1c' : type === 'success' ? '#166534' : '#374151';
+  }
+  function setSubmitting(disabled) {
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = disabled;
+    btn.style.opacity = disabled ? '0.6' : '1';
+    btn.textContent = disabled ? 'กำลังส่ง...' : 'ส่งข้อมูลพบของหาย';
+  }
 
-    async function main() {
-      const profile = await initializeLiff("2008305063-P2NpboxX");
-
-      document.getElementById("submitBtn").onclick = async () => {
-        const itemImageFile = document.getElementById("itemImage").files?.[0] || null;
-        const itemImage = await readFileAsDataURL(itemImageFile);
-
-        const data = {
-          name: profile.displayName, // จาก LIFF
-          userId: profile.userId,
-          category: document.getElementById("category").value,
-          brand: document.getElementById("brand").value,
-          details: document.getElementById("details").value,
-          location: document.getElementById("location").value,
-          date: document.getElementById("date").value,
-          time: document.getElementById("time").value,
-          reporterName: document.getElementById("reporterName").value.trim(),
-          reporterPhone: document.getElementById("reporterPhone").value.trim(),
-          reporterStudentId: document.getElementById("reporterStudentId").value.trim(),
-          itemImage // base64 Data URL
-        };
-
-        // ตรวจว่ากรอกครบหรือไม่
-        if (!data.category || !data.details || !data.location || !data.date || !data.time
-            || !data.reporterName || !data.reporterPhone || !data.reporterStudentId) {
-          document.getElementById("status").innerText = "❌ กรุณากรอกข้อมูลให้ครบถ้วน";
-          return;
+  // Image: read & compress to JPEG to avoid huge base64 (iOS/quota)
+  function readFileAsDataURL(file) {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || '');
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  }
+  function compressImage(file, maxW = 1024, maxH = 1024, quality = 0.7) {
+    return new Promise((resolve) => {
+      if (!file) return resolve('');
+      const img = new Image();
+      const fr = new FileReader();
+      fr.onload = () => { img.src = fr.result; };
+      fr.onerror = () => resolve('');
+      img.onload = () => {
+        let { width, height } = img;
+        const ratio = Math.min(maxW / width, maxH / height, 1);
+        const w = Math.round(width * ratio);
+        const h = Math.round(height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        try {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl || '');
+        } catch {
+          resolve(''); // fallback on unsupported formats
         }
-
-        // ส่งเข้า Google Sheet (เดิม)
-        const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec";
-        const success = await sendDataToGoogleSheet(data, url);
-
-        // เก็บลง localStorage (ใช้ใน admin/search)
-        const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
-        foundItems.push({
-          id: Date.now(),
-          category: data.category,
-          brand: data.brand,
-          details: data.details,
-          location: data.location,
-          date: data.date,
-          time: data.time,
-          status: "waiting",
-          itemImage: data.itemImage,
-          reporterName: data.reporterName,
-          reporterPhone: data.reporterPhone,
-          reporterStudentId: data.reporterStudentId,
-          created: new Date().toISOString()
-        });
-        localStorage.setItem("foundItems", JSON.stringify(foundItems));
-
-        if (success) {
-          document.getElementById("status").innerText = "✅ ส่งข้อมูลเรียบร้อยแล้วค่ะ";
-          await sendLiffMessage("ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ");
-        } else {
-          document.getElementById("status").innerText = "❌ มีข้อผิดพลาดในการส่งข้อมูล";
-        }
-
-        // ล้างฟอร์ม
-        document.getElementById("category").value = "";
-        document.getElementById("brand").value = "";
-        document.getElementById("details").value = "";
-        document.getElementById("location").value = "";
-        document.getElementById("date").value = "";
-        document.getElementById("time").value = "";
-        document.getElementById("reporterName").value = "";
-        document.getElementById("reporterPhone").value = "";
-        document.getElementById("reporterStudentId").value = "";
-        document.getElementById("itemImage").value = "";
       };
+      img.onerror = () => resolve('');
+      fr.readAsDataURL(file);
+    });
+  }
+
+  let liffProfile = null;
+  async function initLiffSafe() {
+    try { liffProfile = await initializeLiff("2008305063-P2NpboxX"); }
+    catch (e) { console.warn('LIFF init skipped:', e); }
+  }
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    showStatus('กำลังส่ง...', 'info');
+
+    const category = document.getElementById("category").value;
+    const brand = document.getElementById("brand").value;
+    const details = document.getElementById("details").value;
+    const location = document.getElementById("location").value;
+    const date = document.getElementById("date").value;
+    const time = document.getElementById("time").value;
+    const reporterName = document.getElementById("reporterName").value.trim();
+    const reporterPhone = document.getElementById("reporterPhone").value.trim();
+    const reporterStudentId = document.getElementById("reporterStudentId").value.trim();
+
+    // Validate
+    if (!category || !details || !location || !date || !time || !reporterName || !reporterPhone || !reporterStudentId) {
+      showStatus('❌ กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+      setSubmitting(false);
+      return;
     }
 
-    main();
+    // Image: try compress, fallback raw, skip if still too large
+    const file = document.getElementById("itemImage").files?.[0] || null;
+    let itemImage = '';
+    try {
+      itemImage = await compressImage(file);
+      if (!itemImage && file) itemImage = await readFileAsDataURL(file); // fallback
+      // If >3.5MB, skip to avoid localStorage quota on iOS
+      if (itemImage && itemImage.length > 3_500_000) {
+        itemImage = '';
+        console.warn('Image skipped: too large for localStorage');
+        showStatus('รูปภาพมีขนาดใหญ่เกินไป จะบันทึกข้อมูลโดยไม่แนบรูปภาพ', 'info');
+      }
+    } catch {
+      itemImage = '';
+    }
+
+    const data = {
+      name: liffProfile?.displayName || '',
+      userId: liffProfile?.userId || '',
+      category, brand, details, location, date, time,
+      reporterName, reporterPhone, reporterStudentId,
+      itemImage
+    };
+
+    // Try sending to Google Sheet (non-blocking)
+    let sheetsOk = false;
+    try {
+      const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec";
+      sheetsOk = await sendDataToGoogleSheet(data, url);
+    } catch (e) {
+      console.warn('Sheet send failed:', e);
+    }
+
+    // Save to localStorage (primary data source for admin/search)
+    const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
+    const record = {
+      id: Date.now(),
+      category, brand, details, location, date, time,
+      status: "waiting",
+      itemImage,
+      reporterName, reporterPhone, reporterStudentId,
+      created: new Date().toISOString()
+    };
+    try {
+      foundItems.push(record);
+      localStorage.setItem("foundItems", JSON.stringify(foundItems));
+    } catch (e) {
+      // Retry without image if quota exceeded
+      try {
+        record.itemImage = '';
+        localStorage.setItem("foundItems", JSON.stringify(foundItems));
+        showStatus('บันทึกแล้ว (ไม่รวมรูป เนื่องจากพื้นที่ไม่พอ)', 'info');
+      } catch (e2) {
+        showStatus('❌ ไม่สามารถบันทึกข้อมูลในอุปกรณ์ได้', 'error');
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    // Optional LIFF message (ignore failures)
+    try {
+      if (sheetsOk) await sendLiffMessage("ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ");
+    } catch {}
+
+    // Success
+    showStatus('✅ ส่งข้อมูลเรียบร้อยแล้ว', 'success');
+    document.getElementById("category").value = "";
+    document.getElementById("brand").value = "";
+    document.getElementById("details").value = "";
+    document.getElementById("location").value = "";
+    document.getElementById("date").value = "";
+    document.getElementById("time").value = "";
+    document.getElementById("reporterName").value = "";
+    document.getElementById("reporterPhone").value = "";
+    document.getElementById("reporterStudentId").value = "";
+    document.getElementById("itemImage").value = "";
+    setSubmitting(false);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initLiffSafe(); // initialize LIFF, but don't block the form
+    document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+  });
   </script>
 </body>
 </html>
