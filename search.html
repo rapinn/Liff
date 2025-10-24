@@ -13,13 +13,13 @@
       color: #333;
     }
     .container {
-      max-width: 1400px;  /* เพิ่มจาก 1200 */
+      max-width: 1400px;
       margin: 0 auto;
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
-      overflow-x: auto;  /* scroll เมื่อจอเล็ก */
+      overflow-x: auto;
     }
     h1 {
       text-align: center;
@@ -52,7 +52,7 @@
     }
     table {
       width: 100%;
-      min-width: 1300px;  /* แสดงครบทุกคอลัมน์ */
+      min-width: 1300px;
       border-collapse: collapse;
       margin-top: 20px;
       table-layout: auto;
@@ -74,7 +74,6 @@
       white-space: normal;
     }
 
-    /* แก้เฉพาะช่องลำดับให้ไม่ขึ้นบรรทัดใหม่ */
     #adminTableContainer table th:first-child {
       white-space: nowrap;
     }
@@ -90,7 +89,6 @@
     .status.expiring { background-color: #ffa500; color: #fff; }
     .status.expired  { background-color: #dc3545; color: #fff; }
 
-    /* Normalize date/time inputs on iPhone */
     input[type="date"], input[type="time"] {
       -webkit-appearance: none;
       appearance: none;
@@ -149,9 +147,7 @@
         border-spacing: 0;
       }
       
-      /* ซ่อนหัวตารางใน mobile */
       #adminTableContainer thead { display: none; }
-
       #adminTableContainer tbody { display: block; width: 100%; }
 
       #adminTableContainer tbody tr {
@@ -179,7 +175,6 @@
       }
       #adminTableContainer tbody td:last-child { border-bottom: none; }
 
-      /* label ให้ขึ้นบรรทัดใหม่ */
       #adminTableContainer tbody td::before {
         content: attr(data-label);
         font-weight: 600;
@@ -206,7 +201,6 @@
         padding: 6px 10px;
       }
 
-      /* 🆕 แก้ไขส่วนรายละเอียดผู้แจ้ง - ให้แสดงแนวตั้ง */
       #adminTableContainer td[data-label^="รายละเอียดผู้แจ้ง"],
       #adminTableContainer td[data-label*="Reporter Details"] {
         flex-direction: column;
@@ -268,6 +262,17 @@
         <label for="searchDetails">รายละเอียดเพิ่มเติม</label>
         <input type="text" id="searchDetails" placeholder="เช่น สีดำ, มีสติ๊กเกอร์ติด">
       </div>
+      <!-- 🆕 เพิ่ม Filter สถานะ -->
+      <div class="form-group">
+        <label for="statusFilter">เลือกสถานะ</label>
+        <select id="statusFilter">
+          <option value="">-- แสดงทั้งหมด --</option>
+          <option value="waiting">รอมารับคืน / สูญหาย</option>
+          <option value="received">รับคืนแล้ว / ได้คืนแล้ว</option>
+          <option value="expiring">ใกล้ถึง 3 เดือน</option>
+          <option value="expired">หมดอายุแล้ว</option>
+        </select>
+      </div>
       <button id="searchBtn">ค้นหา</button>
     </div>
 
@@ -276,8 +281,8 @@
       <div class="table-wrapper">
         <table>
           <colgroup>
-            <col style="width:60px">
-            <col style="width:120px">   <!-- เพิ่มคอลัมน์ใหม่ -->
+            <col style="width:80px">
+            <col style="width:120px">
             <col style="width:140px">
             <col style="width:100px">
             <col style="width:140px">
@@ -293,7 +298,7 @@
           <thead>
             <tr>
               <th>ลำดับ</th>
-              <th>ประเภทการแจ้ง (Type)</th>  <!-- คอลัมน์ใหม่ -->
+              <th>ประเภทการแจ้ง (Type)</th>
               <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
               <th>รูปภาพ (Picture)</th>
               <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
@@ -331,8 +336,7 @@
     }
     function normalizeFound(item) {
       return {
-        id: item.id, source: 'found',
-        type: 'พบของ',  // เพิ่ม type
+        id: item.id, source: 'found', type: 'พบของ',
         category: item.category || '-', brand: item.brand || '-',
         details: item.details || '-', location: item.location || '-',
         date: item.date || '', time: item.time || '',
@@ -343,8 +347,7 @@
     }
     function normalizeLost(item) {
       return {
-        id: item.id, source: 'lost',
-        type: 'ของหาย',  // เพิ่ม type
+        id: item.id, source: 'lost', type: 'ของหาย',
         category: item.itemName || '-', brand: item.brand || '-',
         details: item.description || '-', location: item.location || '-',
         date: item.date || '', time: item.time || '',
@@ -359,10 +362,34 @@
       return [...f, ...l].sort((a, b) => (b.id || 0) - (a.id || 0));
     }
 
+    // 🆕 เพิ่มฟังก์ชันคำนวณวันหมดอายุ (เหมือนหน้า admin)
+    function isExpiring(item) {
+      if (!item.date) return false;
+      const foundDate = new Date(item.date);
+      const now = new Date();
+      const diffTime = now - foundDate;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 60 && diffDays < 90;
+    }
+
+    function isExpired(item) {
+      if (!item.date) return false;
+      const foundDate = new Date(item.date);
+      const now = new Date();
+      const diffTime = now - foundDate;
+      const diffDays = diffTime / (1000 * 60 * 60 * 24);
+      return diffDays >= 90;
+    }
+
     function getStatusClass(item) {
+      if (isExpired(item)) return 'expired';
+      if (isExpiring(item)) return 'expiring';
       return item.status === "received" ? "received" : "waiting";
     }
+
     function getStatusText(item) {
+      if (isExpired(item)) return 'หมดอายุแล้ว';
+      if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
       const waitingText = (item.source === 'lost') ? 'สูญหาย' : 'รอรับคืน';
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
     }
@@ -410,14 +437,26 @@
       const location = document.getElementById("searchLocation").value.trim().toLowerCase();
       const date = document.getElementById("searchDate").value;
       const details = document.getElementById("searchDetails").value.trim().toLowerCase();
+      const statusFilter = document.getElementById("statusFilter").value; // 🆕 เพิ่ม filter สถานะ
 
       const all = loadAll();
-      const results = all.filter(item =>
-        (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
-        (!location || (item.location || '').toLowerCase().includes(location)) &&
-        (!date || item.date === date) &&
-        (!details || (item.details || '').toLowerCase().includes(details))
-      );
+      const results = all.filter(item => {
+        // กรองตามข้อมูลพื้นฐาน
+        const matchBasic = 
+          (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
+          (!location || (item.location || '').toLowerCase().includes(location)) &&
+          (!date || item.date === date) &&
+          (!details || (item.details || '').toLowerCase().includes(details));
+
+        // 🆕 กรองตามสถานะ
+        let matchStatus = true;
+        if (statusFilter) {
+          const itemStatusClass = getStatusClass(item);
+          matchStatus = itemStatusClass === statusFilter;
+        }
+
+        return matchBasic && matchStatus;
+      });
 
       const container = document.getElementById("adminTableContainer");
       const notFound = document.getElementById("notFoundBox");
