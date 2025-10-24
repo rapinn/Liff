@@ -13,13 +13,13 @@
       color: #333;
     }
     .container {
-      max-width: 1200px;
+      max-width: 1400px;  /* เพิ่มจาก 1200 */
       margin: 0 auto;
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
-      overflow-x: auto;
+      overflow-x: auto;  /* scroll เมื่อจอเล็ก */
     }
     h1 {
       text-align: center;
@@ -45,10 +45,14 @@
     }
     button:hover { background-color: #da8012; }
 
-    /* ตารางให้เหมือนหน้า admin */
-    .table-wrapper { overflow-x: auto; }
+    /* ตาราง Desktop */
+    .table-wrapper { 
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
     table {
       width: 100%;
+      min-width: 1300px;  /* แสดงครบทุกคอลัมน์ */
       border-collapse: collapse;
       margin-top: 20px;
       table-layout: auto;
@@ -58,15 +62,16 @@
       padding: 10px;
       text-align: center;
       vertical-align: top;
-      white-space: normal;     /* ตัดบรรทัดได้ */
+      white-space: normal;
       word-break: break-word;
       overflow-wrap: anywhere;
       hyphens: auto;
-      max-width: none;
     }
     table th {
       background-color: #f9f9f9;
       font-weight: bold;
+      line-height: 1.4;
+      white-space: normal;
     }
     .status {
       font-weight: bold;
@@ -80,43 +85,7 @@
     .status.expiring { background-color: #ffa500; color: #fff; }
     .status.expired  { background-color: #dc3545; color: #fff; }
 
-    /* Responsive ให้เหมือน admin */
-    @media (max-width: 768px) {
-      .table-wrapper { overflow-x: hidden; }
-      table { display: block; }
-      table thead { display: none; }
-      table tbody tr {
-        display: block;
-        margin-bottom: 15px;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        padding: 15px;
-      }
-      table td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-      table td:last-child { border-bottom: none; }
-      table td::before {
-        content: attr(data-label);
-        font-weight: bold;
-        margin-right: 10px;
-        min-width: 120px;
-        color: #666;
-        text-align: left;
-      }
-      .status { margin-left: auto; padding: 6px 12px; }
-    }
-    @media (max-width: 480px) {
-      table td::before { min-width: 100px; }
-    }
-
-    /* Normalize date/time inputs on iPhone (same height as other inputs) */
+    /* Normalize date/time inputs on iPhone */
     input[type="date"], input[type="time"] {
       -webkit-appearance: none;
       appearance: none;
@@ -130,79 +99,113 @@
       text-align: left;
     }
 
-    /* Center results on mobile (iPhone portrait) without changing table layout */
+    /* ========== MOBILE ONLY ========== */
     @media (max-width: 768px) {
-      #adminTableContainer {
-        margin-inline: auto;
-        display: grid;
-        place-items: center;       /* center heading + table block */
+      body { padding: 12px; }
+      .container {
+        padding: 16px;
+        overflow-x: visible;
       }
-      #adminTableContainer .table-wrapper {
-        width: 100%;
-        padding: 0 8px;            /* small side padding */
-        display: flex;
-        justify-content: center;   /* center inner table */
-      }
-      /* limit card width and center it */
-      #adminTableContainer table {
-        width: 100%;
-        max-width: 440px;          /* adjust 380–480 to taste */
-        margin: 16px auto 0;
-      }
-      /* each mobile “card” (tr) center + fixed width */
-      #adminTableContainer tbody tr {
-        max-width: 440px;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      #adminTableContainer h2 { text-align: center; }
-      #notFoundBox { text-align: center; }
-    }
 
-    /* Mobile: center results block and limit card width */
-    @media (max-width: 768px) {
+      .form-group { margin-bottom: 12px; }
+
       #adminTableContainer {
         display: flex;
         flex-direction: column;
-        align-items: center;       /* center heading + table wrapper */
-        margin-inline: auto;
+        align-items: center;
+        margin: 20px auto 0;
+        width: 100%;
+        max-width: 100%;
       }
-      #adminTableContainer h2 { text-align: center; }
+      #adminTableContainer h2 {
+        text-align: center;
+        width: 100%;
+        margin-bottom: 12px;
+      }
+
+      #adminTableContainer colgroup { display: none; }
 
       #adminTableContainer .table-wrapper {
         width: 100%;
-        padding: 0 8px;
+        max-width: 100%;
+        padding: 0;
+        overflow: visible;
         display: flex;
-        justify-content: center;   /* center the table inside */
+        justify-content: center;
       }
 
-      /* keep table layout the same, just limit width so space is on both sides */
       #adminTableContainer table {
-        width: 100%;               /* fallback */
-        max-width: 420px;          /* card width */
-        width: min(100%, 420px);   /* modern Safari */
-        margin: 16px auto 0;
+        display: block;
+        width: 100% !important;
+        min-width: auto;
+        max-width: 460px;
+        margin: 0 auto;
+        border-collapse: separate;
+        border-spacing: 0;
       }
+      
+      /* ซ่อนหัวตารางใน mobile */
+      #adminTableContainer thead { display: none; }
 
-      /* each mobile “card” row */
+      #adminTableContainer tbody { display: block; width: 100%; }
+
       #adminTableContainer tbody tr {
-        margin-left: auto;
-        margin-right: auto;
+        display: block;
+        width: 100%;
+        margin: 0 auto 14px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 12px 14px;
+        box-sizing: border-box;
       }
 
-      /* not-found box centered with same width */
+      #adminTableContainer tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding: 8px 0;
+        text-align: left;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+      #adminTableContainer tbody td:last-child { border-bottom: none; }
+
+      /* label ให้ขึ้นบรรทัดใหม่ */
+      #adminTableContainer tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #666;
+        margin-right: 8px;
+        min-width: 130px;
+        max-width: 130px;
+        flex-shrink: 0;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.3;
+      }
+
+      #adminTableContainer td[data-label^="รูปภาพ"] img,
+      #adminTableContainer td[data-label*="Picture"] img {
+        max-width: 72px;
+        max-height: 72px;
+        object-fit: cover;
+      }
+
+      #adminTableContainer td[data-label^="สถานะ"] .status,
+      #adminTableContainer td[data-label*="Status"] .status {
+        display: inline-block;
+        padding: 6px 10px;
+      }
+
       #notFoundBox {
         width: 100%;
-        max-width: 420px;
+        max-width: 460px;
         margin: 12px auto 0;
         text-align: center;
-      }
-    }
-
-    /* iPhone Safari portrait tweak */
-    @supports (-webkit-touch-callout: none) {
-      @media (orientation: portrait) {
-        #adminTableContainer .table-wrapper { padding: 0 10px; }
       }
     }
   </style>
@@ -234,25 +237,24 @@
       <h2>📋 ผลการค้นหา</h2>
       <div class="table-wrapper">
         <table>
-          <!-- colgroup ให้เหมือน admin -->
           <colgroup>
             <col style="width:60px">
-            <col style="width:160px">
+            <col style="width:140px">
             <col style="width:100px">
-            <col style="width:160px">
-            <col style="width:160px">
-            <col style="width:260px">
             <col style="width:140px">
-            <col style="width:120px">
+            <col style="width:140px">
             <col style="width:180px">
-            <col style="width:260px">
-            <col style="width:200px">
+            <col style="width:120px">
+            <col style="width:100px">
             <col style="width:140px">
+            <col style="width:180px">
+            <col style="width:160px">
+            <col style="width:120px">
           </colgroup>
           <thead>
             <tr>
               <th>ลำดับ</th>
-              <th>หมวดหมู่ (Category)</th>
+              <th>หมวดหมู่ / สิ่งของที่หาย (Category)</th>
               <th>รูปภาพ (Picture)</th>
               <th>ยี่ห้อ / ชื่อในบัตร (Brand)</th>
               <th>รุ่น / เลขบัตร (Model)</th>
@@ -278,26 +280,9 @@
         </a>
       </div>
     </div>
-
-    <!-- Remove duplicate “แจ้งของหาย” button at the bottom -->
-    <!-- Delete this block to avoid two buttons after searching -->
-    <!--
-    <div style="text-align:center; margin-top:40px;">
-      <a href="lost.html">
-        <button style="
-          background:#ffd13f; color:#222; font-size:18px; border:none; border-radius:6px;
-          padding:14px 28px; font-weight:bold; cursor:pointer; box-shadow:0 3px 6px rgba(0,0,0,0.2);
-          transition: background 0.2s;
-        " onmouseover="this.style.background='#da8012'" onmouseout="this.style.background='#ffd13f'">
-          แจ้งของหาย
-        </button>
-      </a>
-    </div>
-    -->
   </div>
 
   <script>
-    // โหลดจากทั้ง foundItems และ lostItems เหมือน admin
     function loadFoundRaw() {
       try { return JSON.parse(localStorage.getItem('foundItems')) || []; } catch { return []; }
     }
@@ -332,7 +317,6 @@
       return [...f, ...l].sort((a, b) => (b.id || 0) - (a.id || 0));
     }
 
-    // สถานะเหมือนหน้า admin: lost=สูญหาย, found=รอรับคืน, received=ได้คืนแล้ว
     function getStatusClass(item) {
       return item.status === "received" ? "received" : "waiting";
     }
@@ -341,20 +325,15 @@
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
     }
 
-    // เรนเดอร์ด้วย data-label เหมือน admin (รองรับ mobile)
     function renderAdminTable(items) {
       const tbody = document.getElementById("adminTableBody");
       if (!tbody) return;
-
-      if (!items.length) {
-        tbody.innerHTML = "";
-        return;
-      }
+      if (!items.length) { tbody.innerHTML = ""; return; }
 
       tbody.innerHTML = items.map((item, index) => `
         <tr>
           <td data-label="ลำดับ">${index + 1}</td>
-          <td data-label="หมวดหมู่ (Category)">${item.category}</td>
+          <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category}</td>
           <td data-label="รูปภาพ (Picture)">
             ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
           </td>
@@ -379,7 +358,6 @@
       `).join("");
     }
 
-    // ค้นหาและแสดงผล
     document.getElementById("searchBtn").addEventListener("click", function () {
       const itemName = document.getElementById("searchItemName").value.trim().toLowerCase();
       const location = document.getElementById("searchLocation").value.trim().toLowerCase();
@@ -407,7 +385,6 @@
       }
     });
 
-    // แสดงทั้งหมดครั้งแรก เพื่อให้เหมือนหน้า admin ที่โหลดข้อมูลทันที
     (function init() {
       const all = loadAll();
       if (all.length) {

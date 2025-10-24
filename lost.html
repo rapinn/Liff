@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>แจ้งของหาย</title>
+    <title>แจ้งเรื่องของหาย</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -120,24 +120,33 @@
                 <input type="file" id="itemImage" name="itemImage" accept="image/*">
             </div>
 
-            <!-- ✅ ช่องทางติดต่อผู้แจ้ง (ใหม่) -->
+            <!-- ช่องทางติดต่อผู้แจ้ง -->
             <div class="form-group">
                 <label for="reporterName">ชื่อผู้แจ้ง</label>
                 <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
             </div>
             <div class="form-group">
-                <label for="reporterPhone">เบอร์โทรผู้แจ้ง</label>
-                <input type="tel" id="reporterPhone" placeholder="เช่น 0812345678" required>
+                <label for="reporterPhone">เบอร์โทรผู้แจ้ง (10 หลัก)</label>
+                <input 
+                  type="tel" 
+                  id="reporterPhone" 
+                  placeholder="เช่น 0812345678" 
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="[0-9]{10}"
+                  oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
+                  required>
             </div>
             <div class="form-group">
-                <label for="reporterStudentId">เลขนักศึกษา</label>
+                <label for="reporterStudentId">เลขนักศึกษา (10 หลัก)</label>
                 <input
                   type="text"
                   id="reporterStudentId"
-                  placeholder="เช่น 66xxxxxxxx"
+                  placeholder="เช่น 6612345678"
                   inputmode="numeric"
-                  pattern="[0-9]*"
-                  oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+                  maxlength="10"
+                  pattern="[0-9]{10}"
+                  oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
                   required
                 >
             </div>
@@ -180,6 +189,16 @@
                 return;
             }
 
+            // ตรวจสอบเบอร์และรหัสนักศึกษา 10 หลัก
+            if (reporterPhone.length !== 10 || !/^\d{10}$/.test(reporterPhone)) {
+                document.getElementById("status").innerText = "❌ เบอร์โทรต้องเป็นตัวเลข 10 หลัก";
+                return;
+            }
+            if (reporterStudentId.length !== 10 || !/^\d{10}$/.test(reporterStudentId)) {
+                document.getElementById("status").innerText = "❌ รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก";
+                return;
+            }
+
             const lostItems = JSON.parse(localStorage.getItem("lostItems") || "[]");
             lostItems.push({
                 id: Date.now(),
@@ -192,8 +211,8 @@
                 reporterName,
                 reporterPhone,
                 reporterStudentId,
-                itemImage, // base64 Data URL
-                status: "waiting", // ✅ ตั้งค่าเริ่มต้นให้เป็น waiting (แสดงผลเป็น "สูญหาย")
+                itemImage,
+                status: "waiting",
                 created: new Date().toISOString()
             });
             localStorage.setItem("lostItems", JSON.stringify(lostItems));

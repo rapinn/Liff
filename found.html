@@ -93,14 +93,20 @@
 
     <div class="form-group">
       <label for="category">หมวดหมู่</label>
-      <select id="category" name="category" required>
+      <select id="category" name="category" required onchange="toggleOtherCategory()">
         <option value="">-- เลือกหมวดหมู่ --</option>
         <option>บัตร</option>
         <option>โทรศัพท์</option>
         <option>อุปกรณ์อิเล็กทรอนิกส์</option>
         <option>เครื่องเขียน</option>
-        <option>อื่น ๆ</option>
+        <option value="other">อื่น ๆ</option>
       </select>
+    </div>
+
+    <!-- ช่องกรอกหมวดหมู่เอง (แสดงเมื่อเลือก "อื่น ๆ") -->
+    <div class="form-group" id="otherCategoryGroup" style="display:none;">
+      <label for="otherCategory">ระบุหมวดหมู่สิ่งของ</label>
+      <input type="text" id="otherCategory" placeholder="เช่น กระเป๋า, เสื้อผ้า">
     </div>
 
     <div class="form-group">
@@ -118,7 +124,7 @@
       <input type="text" id="location" name="location" placeholder="เช่น อาคาร บร3" required>
     </div>
 
-    <!-- 🔹 แยกวันที่กับเวลาออกเป็นคนละช่อง -->
+    <!-- แยกวันที่กับเวลาออกเป็นคนละช่อง -->
     <div class="form-group">
       <label for="date">วันที่ที่พบ</label>
       <input type="date" id="date" name="date" required>
@@ -134,24 +140,33 @@
       <input type="file" id="itemImage" name="itemImage" accept="image/*" capture="environment">
     </div>
 
-    <!-- ✅ ช่องทางติดต่อผู้แจ้ง -->
+    <!-- ช่องทางติดต่อผู้แจ้ง -->
     <div class="form-group">
       <label for="reporterName">ชื่อผู้แจ้ง</label>
       <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
     </div>
     <div class="form-group">
-      <label for="reporterPhone">เบอร์โทรผู้แจ้ง</label>
-      <input type="tel" id="reporterPhone" placeholder="เช่น 0812345678" required>
+      <label for="reporterPhone">เบอร์โทรผู้แจ้ง (10 หลัก)</label>
+      <input 
+        type="tel" 
+        id="reporterPhone" 
+        placeholder="เช่น 0812345678" 
+        inputmode="numeric"
+        maxlength="10"
+        pattern="[0-9]{10}"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
+        required>
     </div>
     <div class="form-group">
-      <label for="reporterStudentId">เลขนักศึกษา</label>
+      <label for="reporterStudentId">เลขนักศึกษา (10 หลัก)</label>
       <input
         type="text"
         id="reporterStudentId"
-        placeholder="เช่น 66xxxxxxxx"
+        placeholder="เช่น 6612345678"
         inputmode="numeric"
-        pattern="[0-9]*"
-        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+        maxlength="10"
+        pattern="[0-9]{10}"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,10);"
         required
       >
     </div>
@@ -162,6 +177,20 @@
 
   <script src="liff.js"></script>
   <script>
+  // แสดง/ซ่อนช่องกรอกหมวดหมู่เอง
+  function toggleOtherCategory() {
+    const category = document.getElementById('category').value;
+    const otherGroup = document.getElementById('otherCategoryGroup');
+    if (category === 'other') {
+      otherGroup.style.display = 'block';
+      document.getElementById('otherCategory').required = true;
+    } else {
+      otherGroup.style.display = 'none';
+      document.getElementById('otherCategory').required = false;
+      document.getElementById('otherCategory').value = '';
+    }
+  }
+
   // UI helpers
   function showStatus(msg, type = 'info') {
     const el = document.getElementById('status');
@@ -205,7 +234,7 @@
           const dataUrl = canvas.toDataURL('image/jpeg', quality);
           resolve(dataUrl || '');
         } catch {
-          resolve(''); // fallback on unsupported formats
+          resolve('');
         }
       };
       img.onerror = () => resolve('');
@@ -223,7 +252,18 @@
     setSubmitting(true);
     showStatus('กำลังส่ง...', 'info');
 
-    const category = document.getElementById("category").value;
+    let category = document.getElementById("category").value;
+    // ถ้าเลือก "อื่น ๆ" ให้ใช้ค่าที่กรอกเอง
+    if (category === 'other') {
+      const otherCat = document.getElementById("otherCategory").value.trim();
+      if (!otherCat) {
+        showStatus('❌ กรุณาระบุหมวดหมู่', 'error');
+        setSubmitting(false);
+        return;
+      }
+      category = otherCat;
+    }
+
     const brand = document.getElementById("brand").value;
     const details = document.getElementById("details").value;
     const location = document.getElementById("location").value;
@@ -240,13 +280,24 @@
       return;
     }
 
+    // ตรวจสอบเบอร์และรหัสนักศึกษา 10 หลัก
+    if (reporterPhone.length !== 10 || !/^\d{10}$/.test(reporterPhone)) {
+      showStatus('❌ เบอร์โทรต้องเป็นตัวเลข 10 หลัก', 'error');
+      setSubmitting(false);
+      return;
+    }
+    if (reporterStudentId.length !== 10 || !/^\d{10}$/.test(reporterStudentId)) {
+      showStatus('❌ รหัสนักศึกษาต้องเป็นตัวเลข 10 หลัก', 'error');
+      setSubmitting(false);
+      return;
+    }
+
     // Image: try compress, fallback raw, skip if still too large
     const file = document.getElementById("itemImage").files?.[0] || null;
     let itemImage = '';
     try {
       itemImage = await compressImage(file);
-      if (!itemImage && file) itemImage = await readFileAsDataURL(file); // fallback
-      // If >3.5MB, skip to avoid localStorage quota on iOS
+      if (!itemImage && file) itemImage = await readFileAsDataURL(file);
       if (itemImage && itemImage.length > 3_500_000) {
         itemImage = '';
         console.warn('Image skipped: too large for localStorage');
@@ -273,7 +324,7 @@
       console.warn('Sheet send failed:', e);
     }
 
-    // Save to localStorage (primary data source for admin/search)
+    // Save to localStorage
     const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
     const record = {
       id: Date.now(),
@@ -287,7 +338,6 @@
       foundItems.push(record);
       localStorage.setItem("foundItems", JSON.stringify(foundItems));
     } catch (e) {
-      // Retry without image if quota exceeded
       try {
         record.itemImage = '';
         localStorage.setItem("foundItems", JSON.stringify(foundItems));
@@ -299,7 +349,7 @@
       }
     }
 
-    // Optional LIFF message (ignore failures)
+    // Optional LIFF message
     try {
       if (sheetsOk) await sendLiffMessage("ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ");
     } catch {}
@@ -307,6 +357,8 @@
     // Success
     showStatus('✅ ส่งข้อมูลเรียบร้อยแล้ว', 'success');
     document.getElementById("category").value = "";
+    document.getElementById("otherCategory").value = "";
+    document.getElementById("otherCategoryGroup").style.display = "none";
     document.getElementById("brand").value = "";
     document.getElementById("details").value = "";
     document.getElementById("location").value = "";
@@ -320,7 +372,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    initLiffSafe(); // initialize LIFF, but don't block the form
+    initLiffSafe();
     document.getElementById("submitBtn").addEventListener("click", handleSubmit);
   });
   </script>
