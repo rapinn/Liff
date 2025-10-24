@@ -293,10 +293,10 @@
     <div class="filter-section">
       <select id="statusFilter">
         <option value="">-- เลือกสถานะ --</option>
-        <option value="waiting">รอรับคืน (Waiting for pick up)</option>
+        <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
         <option value="received">รับคืนแล้ว (Received)</option>
         <option value="expiring">ใกล้ถึง 3 เดือน (Expiring)</option>
-        <option value="expired">หมดอายุแล้ว (Expired)</option>
+        <option value="expired">สถานะรอจำหน่ายส่งออก (Expired)</option>
       </select>
       <input type="date" id="expiryFilter" placeholder="กรองตามวันที่หมดอายุ">
       <button onclick="applyFilters()">กรองข้อมูล</button>
@@ -423,7 +423,7 @@
     }
 
     function getStatusText(item) {
-      if (isExpired(item)) return 'หมดอายุแล้ว';
+      if (isExpired(item)) return 'สถานะรอจำหน่ายส่งออก';
       if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
       const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
@@ -490,13 +490,19 @@
 
     function getManagementActions(item) {
       if (isExpired(item)) {
-        return `<span class="status expired">หมดอายุแล้ว (Expired)</span>`;
+        return `<span class="status expired">สถานะรอจำหน่ายส่งออก (Expired)</span>`;
       } else if (isExpiring(item)) {
         return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
       }
-      const toggleTo = item.status === 'received' ? 'waiting' : 'received';
-      const btnText = item.status === 'received' ? 'รอมารับคืน' : 'รับคืนแล้ว';
-      return `<button onclick="updateStatus(${item.id}, '${item.source}', '${toggleTo}')">${btnText}</button>`;
+      
+      // ปุ่มแสดง "การกระทำถัดไป" ไม่ใช่สถานะปัจจุบัน
+      if (item.status === 'received') {
+        // ถ้ารับคืนแล้ว → แสดงปุ่ม "ยกเลิกการรับคืน" (เปลี่ยนกลับเป็น waiting)
+        return `<button onclick="updateStatus(${item.id}, '${item.source}', 'waiting')">สถานะรับคืนแล้ว</button>`;
+      } else {
+        // ถ้ายังรอรับคืน → แสดงปุ่ม "ทำเครื่องหมายว่ารับคืนแล้ว" (เปลี่ยนเป็น received)
+        return `<button onclick="updateStatus(${item.id}, '${item.source}', 'received')">สถานะรอรับคืน</button>`;
+      }
     }
 
     // -------- Update back to correct store --------
