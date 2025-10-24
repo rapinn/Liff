@@ -68,6 +68,21 @@
     button:hover {
       background-color: #da8012;
     }
+
+    /* Normalize date/time inputs on iPhone (same height as other inputs) */
+    input[type="date"], input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 44px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    /* Improve rendering of iOS value area */
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -119,7 +134,7 @@
       <input type="file" id="itemImage" name="itemImage" accept="image/*">
     </div>
 
-    <!-- ✅ ช่องทางติดต่อผู้แจ้ง (ใหม่) -->
+    <!-- ✅ ช่องทางติดต่อผู้แจ้ง -->
     <div class="form-group">
       <label for="reporterName">ชื่อผู้แจ้ง</label>
       <input type="text" id="reporterName" placeholder="ชื่อ-สกุล" required>
@@ -130,7 +145,15 @@
     </div>
     <div class="form-group">
       <label for="reporterStudentId">เลขนักศึกษา</label>
-      <input type="text" id="reporterStudentId" placeholder="เช่น 66xxxxxxxx" required>
+      <input
+        type="text"
+        id="reporterStudentId"
+        placeholder="เช่น 66xxxxxxxx"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+        required
+      >
     </div>
 
     <button type="button" id="submitBtn">ส่งข้อมูลพบของหาย</button>

@@ -343,6 +343,23 @@
         padding: 5px 0;
       }
     }
+
+    /* Normalize date/time inputs (filter section) on iPhone */
+    .filter-section input[type="date"],
+    .filter-section input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 44px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .filter-section input[type="date"]::-webkit-date-and-time-value,
+    .filter-section input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -390,7 +407,7 @@
             <th>วันที่ (Date)</th>
             <th>เวลา (Time)</th>
             <th>สถานที่พบ (Location)</th>
-            <th>รายละเอียดผู้แจ้ง</th>
+            <th>รายละเอียดผู้แจ้ง (Reporter Details)</th>
             <th>การจัดเก็บและครบกำหนด (Record)</th>
             <th>สถานะ (Status)</th>
           </tr>

@@ -115,6 +115,20 @@
     @media (max-width: 480px) {
       table td::before { min-width: 100px; }
     }
+
+    /* Normalize date/time inputs on iPhone (same height as other inputs) */
+    input[type="date"], input[type="time"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 44px;
+      padding: 10px 12px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -170,7 +184,7 @@
               <th>วันที่ (Date)</th>
               <th>เวลา (Time)</th>
               <th>สถานที่พบ (Location)</th>
-              <th>รายละเอียดผู้แจ้ง</th>
+              <th>รายละเอียดผู้แจ้ง (Reporter Details)</th>
               <th>การจัดเก็บและครบกำหนด (Record)</th>
               <th>สถานะ (Status)</th>
             </tr>
@@ -189,7 +203,9 @@
       </div>
     </div>
 
-    <!-- ปุ่มแจ้งของหายถาวร -->
+    <!-- Remove duplicate “แจ้งของหาย” button at the bottom -->
+    <!-- Delete this block to avoid two buttons after searching -->
+    <!--
     <div style="text-align:center; margin-top:40px;">
       <a href="lost.html">
         <button style="
@@ -201,6 +217,7 @@
         </button>
       </a>
     </div>
+    -->
   </div>
 
   <script>

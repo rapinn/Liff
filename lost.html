@@ -65,6 +65,20 @@
             text-align: center;
             margin-top: 10px;
         }
+
+        /* Normalize date/time inputs on iPhone (same height as other inputs) */
+        input[type="date"], input[type="time"] {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 44px;
+          padding: 10px 12px;
+          font-size: 16px;
+          line-height: 1.2;
+        }
+        input[type="date"]::-webkit-date-and-time-value,
+        input[type="time"]::-webkit-date-and-time-value {
+          text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -117,7 +131,15 @@
             </div>
             <div class="form-group">
                 <label for="reporterStudentId">เลขนักศึกษา</label>
-                <input type="text" id="reporterStudentId" placeholder="เช่น 66xxxxxxxx" required>
+                <input
+                  type="text"
+                  id="reporterStudentId"
+                  placeholder="เช่น 66xxxxxxxx"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+                  required
+                >
             </div>
 
             <button id="reportBtn">ส่งข้อมูลแจ้งของหาย</button>
