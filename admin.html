@@ -90,6 +90,11 @@
       white-space: normal;
     }
 
+    /* แก้เฉพาะช่องลำดับให้ไม่ขึ้นบรรทัดใหม่ */
+    table th:first-child {
+      white-space: nowrap;
+    }
+
     .status {
       font-weight: bold;
       padding: 5px 10px;
@@ -267,8 +272,8 @@
     <div class="table-wrapper">
       <table>
         <colgroup>
-          <col style="width:60px">
-          <col style="width:120px">   <!-- เพิ่มคอลัมน์ใหม่ -->
+          <col style="width:80px">   <!-- เพิ่มจาก 60px เป็น 80px -->
+          <col style="width:120px">
           <col style="width:140px">
           <col style="width:100px">
           <col style="width:140px">
