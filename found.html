@@ -248,6 +248,40 @@
     catch (e) { console.warn('LIFF init skipped:', e); }
   }
 
+  const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzMb2Btbipi9S_nqPsWEL1SxfydepMH_QSHRpIVYenGodULTmtlLaC-XdoDc6IcCosS/exec"; // 👈 ใส่ URL ที่ได้จาก Deploy
+
+  async function sendToGoogleSheet(data) {
+    try {
+      const response = await fetch(GOOGLE_SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors', // ต้องใช้ no-cors เพราะ Google Apps Script
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'found',
+          id: data.id,
+          category: data.category,
+          brand: data.brand,
+          details: data.details,
+          location: data.location,
+          date: data.date,
+          time: data.time,
+          reporterName: data.reporterName,
+          reporterPhone: data.reporterPhone,
+          reporterStudentId: data.reporterStudentId,
+          status: data.status,
+          itemImage: data.itemImage ? true : false // ส่งแค่มี/ไม่มี
+        })
+      });
+      console.log('✅ Sent to Google Sheets');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to send to Google Sheets:', error);
+      return false;
+    }
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     showStatus('กำลังส่ง...', 'info');
@@ -308,38 +342,23 @@
     }
 
     const data = {
-      name: liffProfile?.displayName || '',
-      userId: liffProfile?.userId || '',
+      id: Date.now(),
       category, brand, details, location, date, time,
       reporterName, reporterPhone, reporterStudentId,
-      itemImage
+      itemImage,
+      status: 'waiting',
+      created: new Date().toISOString()
     };
-
-    // Try sending to Google Sheet (non-blocking)
-    let sheetsOk = false;
-    try {
-      const url = "https://script.google.com/macros/s/AKfycbxBrtifRvQ2fbRxEq9gDY_RLkAVcN5tsS2ybYJ34GeyzC6S0BR_UyDHSBhygDzkoYnSSw/exec";
-      sheetsOk = await sendDataToGoogleSheet(data, url);
-    } catch (e) {
-      console.warn('Sheet send failed:', e);
-    }
 
     // Save to localStorage
     const foundItems = JSON.parse(localStorage.getItem("foundItems") || "[]");
-    const record = {
-      id: Date.now(),
-      category, brand, details, location, date, time,
-      status: "waiting",
-      itemImage,
-      reporterName, reporterPhone, reporterStudentId,
-      created: new Date().toISOString()
-    };
     try {
-      foundItems.push(record);
+      foundItems.push(data);
       localStorage.setItem("foundItems", JSON.stringify(foundItems));
     } catch (e) {
       try {
-        record.itemImage = '';
+        data.itemImage = '';
+        foundItems.push(data);
         localStorage.setItem("foundItems", JSON.stringify(foundItems));
         showStatus('บันทึกแล้ว (ไม่รวมรูป เนื่องจากพื้นที่ไม่พอ)', 'info');
       } catch (e2) {
@@ -349,10 +368,10 @@
       }
     }
 
-    // Optional LIFF message
-    try {
-      if (sheetsOk) await sendLiffMessage("ฉันได้แจ้งพบของหายเรียบร้อยแล้วค่ะ");
-    } catch {}
+    // 🆕 Send to Google Sheets (ไม่รอผลลัพธ์)
+    sendToGoogleSheet(data).catch(err => {
+      console.warn('Sheet sync failed (will retry later):', err);
+    });
 
     // Success
     showStatus('✅ ส่งข้อมูลเรียบร้อยแล้ว', 'success');

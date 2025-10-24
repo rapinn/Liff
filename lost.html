@@ -158,6 +158,40 @@
 
     <script src="liff.js"></script>
     <script>
+        const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzMb2Btbipi9S_nqPsWEL1SxfydepMH_QSHRpIVYenGodULTmtlLaC-XdoDc6IcCosS/exec";
+
+        async function sendToGoogleSheet(data) {
+          try {
+            const response = await fetch(GOOGLE_SHEET_URL, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                type: 'lost', // 👈 เปลี่ยนเป็น 'lost'
+                id: data.id,
+                itemName: data.itemName,
+                brand: data.brand,
+                description: data.description,
+                location: data.location,
+                date: data.date,
+                time: data.time,
+                reporterName: data.reporterName,
+                reporterPhone: data.reporterPhone,
+                reporterStudentId: data.reporterStudentId,
+                status: data.status,
+                itemImage: data.itemImage ? true : false
+              })
+            });
+            console.log('✅ Sent to Google Sheets');
+            return true;
+          } catch (error) {
+            console.error('❌ Failed to send to Google Sheets:', error);
+            return false;
+          }
+        }
+
         // Helper: compress image (เพิ่มเหมือนหน้า found)
         function compressImage(file, maxW = 1024, maxH = 1024, quality = 0.7) {
           return new Promise((resolve) => {
@@ -245,20 +279,14 @@
             const lostItems = JSON.parse(localStorage.getItem("lostItems") || "[]");
             const record = {
                 id: Date.now(),
-                itemName,
-                brand,
-                description,
-                location,
-                date,
-                time,
-                reporterName,
-                reporterPhone,
-                reporterStudentId,
+                itemName, brand, description, location, date, time,
+                reporterName, reporterPhone, reporterStudentId,
                 itemImage,
                 status: "waiting",
                 created: new Date().toISOString()
             };
 
+            // Save to localStorage
             try {
               lostItems.push(record);
               localStorage.setItem("lostItems", JSON.stringify(lostItems));
@@ -275,6 +303,11 @@
                 return;
               }
             }
+
+            // 🆕 Send to Google Sheets
+            sendToGoogleSheet(record).catch(err => {
+              console.warn('Sheet sync failed:', err);
+            });
 
             document.getElementById("status").innerText = "✅ ส่งข้อมูลแจ้งของหายเรียบร้อยแล้ว";
             document.getElementById("status").style.color = "#166534";
