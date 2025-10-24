@@ -249,6 +249,39 @@
         width: 100%;
         margin-top: 4px;
       }
+
+      /* 🆕 แก้ไขส่วนรายละเอียดผู้แจ้ง - ให้แสดงแนวตั้ง */
+      table td[data-label^="รายละเอียดผู้แจ้ง"],
+      table td[data-label*="Reporter Details"] {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"]::before,
+      table td[data-label*="Reporter Details"]::before {
+        margin-bottom: 8px;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"] > div,
+      table td[data-label*="Reporter Details"] > div {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"] > div:last-child,
+      table td[data-label*="Reporter Details"] > div:last-child {
+        border-bottom: none;
+      }
+
+      table td[data-label^="รายละเอียดผู้แจ้ง"] strong,
+      table td[data-label*="Reporter Details"] strong {
+        color: #666;
+        font-weight: 600;
+        min-width: 100px;
+      }
     }
   </style>
 </head>
@@ -260,7 +293,7 @@
     <div class="filter-section">
       <select id="statusFilter">
         <option value="">-- เลือกสถานะ --</option>
-        <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
+        <option value="waiting">รอรับคืน (Waiting for pick up)</option>
         <option value="received">รับคืนแล้ว (Received)</option>
         <option value="expiring">ใกล้ถึง 3 เดือน (Expiring)</option>
         <option value="expired">หมดอายุแล้ว (Expired)</option>
