@@ -328,41 +328,23 @@
   </div>
 
   <script>
-    function loadFoundRaw() {
-      try { return JSON.parse(localStorage.getItem('foundItems')) || []; } catch { return []; }
-    }
-    function loadLostRaw() {
-      try { return JSON.parse(localStorage.getItem('lostItems')) || []; } catch { return []; }
-    }
-    function normalizeFound(item) {
-      return {
-        id: item.id, source: 'found', type: 'พบของ',
-        category: item.category || '-', brand: item.brand || '-',
-        details: item.details || '-', location: item.location || '-',
-        date: item.date || '', time: item.time || '',
-        status: item.status || 'waiting', itemImage: item.itemImage || '',
-        reporterName: item.reporterName || '-', reporterPhone: item.reporterPhone || '-',
-        reporterStudentId: item.reporterStudentId || '-'
-      };
-    }
-    function normalizeLost(item) {
-      return {
-        id: item.id, source: 'lost', type: 'ของหาย',
-        category: item.itemName || '-', brand: item.brand || '-',
-        details: item.description || '-', location: item.location || '-',
-        date: item.date || '', time: item.time || '',
-        status: item.status || 'waiting', itemImage: item.itemImage || '',
-        reporterName: item.reporterName || '-', reporterPhone: item.reporterPhone || '-',
-        reporterStudentId: item.reporterStudentId || '-'
-      };
-    }
-    function loadAll() {
-      const f = loadFoundRaw().map(normalizeFound);
-      const l = loadLostRaw().map(normalizeLost);
-      return [...f, ...l].sort((a, b) => (b.id || 0) - (a.id || 0));
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzMb2Btbipi9S_nqPsWEL1SxfydepMH_QSHRpIVYenGodULTmtlLaC-XdoDc6IcCosS/exec"; // 👈 ใส่ URL เดียวกัน
+
+    async function loadAllItemsFromSheet() {
+      try {
+        const response = await fetch(GOOGLE_SHEET_URL);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          return result.data || [];
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to load from Sheets:', error);
+        return [];
+      }
     }
 
-    // 🆕 เพิ่มฟังก์ชันคำนวณวันหมดอายุ (เหมือนหน้า admin)
     function isExpiring(item) {
       if (!item.date) return false;
       const foundDate = new Date(item.date);
@@ -408,9 +390,7 @@
             </span>
           </td>
           <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category}</td>
-          <td data-label="รูปภาพ (Picture)">
-            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
-          </td>
+          <td data-label="รูปภาพ (Picture)">ไม่มี</td>
           <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
           <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
           <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
@@ -432,23 +412,21 @@
       `).join("");
     }
 
-    document.getElementById("searchBtn").addEventListener("click", function () {
+    document.getElementById("searchBtn").addEventListener("click", async function () {
       const itemName = document.getElementById("searchItemName").value.trim().toLowerCase();
       const location = document.getElementById("searchLocation").value.trim().toLowerCase();
       const date = document.getElementById("searchDate").value;
       const details = document.getElementById("searchDetails").value.trim().toLowerCase();
-      const statusFilter = document.getElementById("statusFilter").value; // 🆕 เพิ่ม filter สถานะ
+      const statusFilter = document.getElementById("statusFilter").value;
 
-      const all = loadAll();
+      const all = await loadAllItemsFromSheet();
       const results = all.filter(item => {
-        // กรองตามข้อมูลพื้นฐาน
         const matchBasic = 
           (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
           (!location || (item.location || '').toLowerCase().includes(location)) &&
           (!date || item.date === date) &&
           (!details || (item.details || '').toLowerCase().includes(details));
 
-        // 🆕 กรองตามสถานะ
         let matchStatus = true;
         if (statusFilter) {
           const itemStatusClass = getStatusClass(item);
@@ -471,8 +449,8 @@
       }
     });
 
-    (function init() {
-      const all = loadAll();
+    (async function init() {
+      const all = await loadAllItemsFromSheet();
       if (all.length) {
         renderAdminTable(all);
         document.getElementById("adminTableContainer").style.display = "block";

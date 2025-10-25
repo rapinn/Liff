@@ -345,6 +345,8 @@
 
   <script src="liff.js"></script>
   <script>
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzMb2Btbipi9S_nqPsWEL1SxfydepMH_QSHRpIVYenGodULTmtlLaC-XdoDc6IcCosS/exec"; // 👈 ใส่ URL ใหม่
+
     async function main() {
       try {
         const profile = await initializeLiff("2008305063-P2NpboxX");
@@ -355,64 +357,20 @@
     }
     main();
 
-    // -------- Load & normalize from both stores --------
-    function loadFoundRaw() {
-      try { return JSON.parse(localStorage.getItem('foundItems')) || []; } catch { return []; }
-    }
-    function loadLostRaw() {
-      try { return JSON.parse(localStorage.getItem('lostItems')) || []; } catch { return []; }
-    }
-    function saveFoundRaw(items) {
-      localStorage.setItem('foundItems', JSON.stringify(items));
-    }
-    function saveLostRaw(items) {
-      localStorage.setItem('lostItems', JSON.stringify(items));
-    }
-
-    function normalizeFound(item) {
-      return {
-        id: item.id,
-        source: 'found',
-        type: 'พบของ',  // เพิ่ม type
-        category: item.category || '-',
-        brand: item.brand || '-',
-        details: item.details || '-',
-        location: item.location || '-',
-        date: item.date || '',
-        time: item.time || '',
-        status: item.status || 'waiting',
-        itemImage: item.itemImage || '',
-        reporterName: item.reporterName || '-',
-        reporterPhone: item.reporterPhone || '-',
-        reporterStudentId: item.reporterStudentId || '-',
-        created: item.created || new Date().toISOString()
-      };
-    }
-
-    function normalizeLost(item) {
-      return {
-        id: item.id,
-        source: 'lost',
-        type: 'ของหาย',  // เพิ่ม type
-        category: item.itemName || '-',
-        brand: item.brand || '-',
-        details: item.description || '-',
-        location: item.location || '-',
-        date: item.date || '',
-        time: item.time || '',
-        status: item.status || 'waiting',
-        itemImage: item.itemImage || '',
-        reporterName: item.reporterName || '-',
-        reporterPhone: item.reporterPhone || '-',
-        reporterStudentId: item.reporterStudentId || '-',
-        created: item.created || new Date().toISOString()
-      };
-    }
-
-    function loadAllItems() {
-      const f = loadFoundRaw().map(normalizeFound);
-      const l = loadLostRaw().map(normalizeLost);
-      return [...f, ...l].sort((a, b) => (b.id || 0) - (a.id || 0));
+    // 🆕 โหลดข้อมูลจาก Google Sheets
+    async function loadAllItemsFromSheet() {
+      try {
+        const response = await fetch(GOOGLE_SHEET_URL);
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          return result.data || [];
+        }
+        return [];
+      } catch (error) {
+        console.error('Failed to load from Sheets:', error);
+        return [];
+      }
     }
 
     // -------- Helpers (คำนวณวันที่ถูกต้อง) --------
@@ -466,9 +424,7 @@
             </span>
           </td>
           <td data-label="หมวดหมู่ (Category)">${item.category}</td>
-          <td data-label="รูปภาพ (Picture)">
-            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
-          </td>
+          <td data-label="รูปภาพ (Picture)">ไม่มี</td>
           <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
           <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
           <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
@@ -495,42 +451,37 @@
         return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
       }
       
-      // แสดงสถานะปัจจุบันในปุ่ม
       if (item.status === 'received') {
-        // ถ้ารับคืนแล้ว → แสดงปุ่ม "สถานะรับคืนแล้ว" (คลิกเพื่อเปลี่ยนกลับเป็น waiting)
         return `<button style="background-color:#dbeafe;color:#1e40af;" onclick="updateStatus(${item.id}, '${item.source}', 'waiting')">สถานะรับคืนแล้ว</button>`;
       } else {
-        // ถ้ายังรอรับคืน → แสดงปุ่ม "สถานะรอรับคืน" (คลิกเพื่อเปลี่ยนเป็น received)
         return `<button style="background-color:#dcfce7;color:#166534;" onclick="updateStatus(${item.id}, '${item.source}', 'received')">สถานะรอรับคืน</button>`;
       }
     }
 
-    // -------- Update back to correct store --------
-    function updateStatus(id, source, newStatus) {
-      if (source === 'found') {
-        const arr = loadFoundRaw();
-        const i = arr.findIndex(x => String(x.id) === String(id));
-        if (i !== -1) {
-          arr[i].status = newStatus;
-          saveFoundRaw(arr);
-        }
-      } else if (source === 'lost') {
-        const arr = loadLostRaw();
-        const i = arr.findIndex(x => String(x.id) === String(id));
-        if (i !== -1) {
-          arr[i].status = newStatus;
-          saveLostRaw(arr);
-        }
+    // 🆕 อัปเดต status ไปยัง Google Sheets
+    async function updateStatus(id, source, newStatus) {
+      try {
+        await fetch(GOOGLE_SHEET_URL + '?action=updateStatus', {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, source, status: newStatus })
+        });
+        
+        // Reload data
+        await applyFilters();
+      } catch (error) {
+        console.error('Failed to update status:', error);
+        alert('ไม่สามารถอัปเดตสถานะได้ กรุณาลองใหม่');
       }
-      applyFilters();
     }
 
-    // -------- Filters (แก้ไขให้ตรงกับ status class) --------
-    function applyFilters() {
+    // -------- Filters --------
+    async function applyFilters() {
       const statusFilter = document.getElementById("statusFilter")?.value || '';
       const expiryFilter = document.getElementById("expiryFilter")?.value || '';
 
-      const all = loadAllItems();
+      const all = await loadAllItemsFromSheet();
       const filtered = all.filter(item => {
         let isStatusMatch = true;
         if (statusFilter) {
