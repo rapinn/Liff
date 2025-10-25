@@ -296,7 +296,7 @@
         <option value="waiting">รอมารับคืน (Waiting for pick up)</option>
         <option value="received">รับคืนแล้ว (Received)</option>
         <option value="expiring">ใกล้ถึง 3 เดือน (Expiring)</option>
-        <option value="expired">สถานะรอจำหน่ายส่งออก (Expired)</option>
+        <option value="expired">หมดอายุแล้ว (Expired)</option>
       </select>
       <input type="date" id="expiryFilter" placeholder="กรองตามวันที่หมดอายุ">
       <button onclick="applyFilters()">กรองข้อมูล</button>
@@ -345,7 +345,7 @@
 
   <script src="liff.js"></script>
   <script>
-    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzMb2Btbipi9S_nqPsWEL1SxfydepMH_QSHRpIVYenGodULTmtlLaC-XdoDc6IcCosS/exec"; // 👈 ใส่ URL ใหม่
+    const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbwIFuTgpOLX0ZBdzynd5KkU3ffsWLakRwkskfgbDKEiwHoJK8pqDgki43aEMBW3VUob/exec"; // 👈 ใส่ URL ใหม่
 
     async function main() {
       try {
@@ -381,7 +381,7 @@
     }
 
     function getStatusText(item) {
-      if (isExpired(item)) return 'สถานะรอจำหน่ายส่งออก';
+      if (isExpired(item)) return 'หมดอายุแล้ว';
       if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
       const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
@@ -446,7 +446,7 @@
 
     function getManagementActions(item) {
       if (isExpired(item)) {
-        return `<span class="status expired">สถานะรอจำหน่ายส่งออก (Expired)</span>`;
+        return `<span class="status expired">จำหน่ายส่งออก (Expired)</span>`;
       } else if (isExpiring(item)) {
         return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
       }
