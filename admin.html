@@ -495,13 +495,13 @@
         return `<span class="status expiring">ใกล้ถึง 3 เดือน (Expiring)</span>`;
       }
       
-      // ปุ่มแสดง "การกระทำถัดไป" ไม่ใช่สถานะปัจจุบัน
+      // แสดงสถานะปัจจุบันในปุ่ม
       if (item.status === 'received') {
-        // ถ้ารับคืนแล้ว → แสดงปุ่ม "ยกเลิกการรับคืน" (เปลี่ยนกลับเป็น waiting)
-        return `<button onclick="updateStatus(${item.id}, '${item.source}', 'waiting')">สถานะรับคืนแล้ว</button>`;
+        // ถ้ารับคืนแล้ว → แสดงปุ่ม "สถานะรับคืนแล้ว" (คลิกเพื่อเปลี่ยนกลับเป็น waiting)
+        return `<button style="background-color:#dbeafe;color:#1e40af;" onclick="updateStatus(${item.id}, '${item.source}', 'waiting')">สถานะรับคืนแล้ว</button>`;
       } else {
-        // ถ้ายังรอรับคืน → แสดงปุ่ม "ทำเครื่องหมายว่ารับคืนแล้ว" (เปลี่ยนเป็น received)
-        return `<button onclick="updateStatus(${item.id}, '${item.source}', 'received')">สถานะรอรับคืน</button>`;
+        // ถ้ายังรอรับคืน → แสดงปุ่ม "สถานะรอรับคืน" (คลิกเพื่อเปลี่ยนเป็น received)
+        return `<button style="background-color:#dcfce7;color:#166534;" onclick="updateStatus(${item.id}, '${item.source}', 'received')">สถานะรอรับคืน</button>`;
       }
     }
 
