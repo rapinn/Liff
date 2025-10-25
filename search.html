@@ -376,12 +376,46 @@
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
     }
 
-    function renderAdminTable(items) {
-      const tbody = document.getElementById("adminTableBody");
-      if (!tbody) return;
-      if (!items.length) { tbody.innerHTML = ""; return; }
+    // -------- ฟังก์ชันแปลงวันที่และเวลา --------
+    function formatDate(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch (e) {
+        return '-';
+      }
+    }
 
-      tbody.innerHTML = items.map((item, index) => `
+    function formatTime(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    function renderAdminTable(items) {
+      const tableBody = document.getElementById("adminTableBody");
+      if (!tableBody) return;
+
+      if (!items.length) {
+        tableBody.innerHTML = `<tr><td colspan="13" style="text-align:center;">ยังไม่มีรายการ</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = items.map((item, index) => `
         <tr>
           <td data-label="ลำดับ">${index + 1}</td>
           <td data-label="ประเภทการแจ้ง (Type)">
@@ -390,12 +424,14 @@
             </span>
           </td>
           <td data-label="หมวดหมู่ / สิ่งของที่หาย (Category)">${item.category}</td>
-          <td data-label="รูปภาพ (Picture)">ไม่มี</td>
+          <td data-label="รูปภาพ (Picture)">
+            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
+          </td>
           <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
           <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
           <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
-          <td data-label="วันที่ (Date)">${item.date || "-"}</td>
-          <td data-label="เวลา (Time)">${item.time || "-"}</td>
+          <td data-label="วันที่ (Date)">${formatDate(item.date)}</td>
+          <td data-label="เวลา (Time)">${formatTime(item.time)}</td>
           <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
           <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
             <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>

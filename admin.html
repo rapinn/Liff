@@ -349,7 +349,7 @@
 
     async function main() {
       try {
-        const profile = await initializeLiff("2008305063-P2NpboxX");
+        const profile = await initializeLiff ("2008305063-P2NpboxX"); // 🔥 เอาช่องว่างออก
         console.log(`Welcome, ${profile.displayName}`);
       } catch (e) {
         console.warn('LIFF init skipped:', e);
@@ -370,6 +370,36 @@
       } catch (error) {
         console.error('Failed to load from Sheets:', error);
         return [];
+      }
+    }
+
+    // -------- ฟังก์ชันแปลงวันที่และเวลา --------
+    function formatDate(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    function formatTime(isoString) {
+      if (!isoString) return '-';
+      try {
+        const date = new Date(isoString);
+        if (isNaN(date.getTime())) return '-';
+        
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      } catch (e) {
+        return '-';
       }
     }
 
@@ -424,12 +454,14 @@
             </span>
           </td>
           <td data-label="หมวดหมู่ (Category)">${item.category}</td>
-          <td data-label="รูปภาพ (Picture)">ไม่มี</td>
+          <td data-label="รูปภาพ (Picture)">
+            ${item.itemImage ? `<img src="${item.itemImage}" alt="รูปภาพ" style="width:50px;height:50px;object-fit:cover;">` : "ไม่มี"}
+          </td>
           <td data-label="ยี่ห้อ / ชื่อในบัตร (Brand)">${item.brand || "-"}</td>
           <td data-label="รุ่น / เลขบัตร (Model)">${item.details || "-"}</td>
           <td data-label="รายละเอียดเพิ่มเติม (More Details)">${item.details || "-"}</td>
-          <td data-label="วันที่ (Date)">${item.date || "-"}</td>
-          <td data-label="เวลา (Time)">${item.time || "-"}</td>
+          <td data-label="วันที่ (Date)">${formatDate(item.date)}</td>
+          <td data-label="เวลา (Time)">${formatTime(item.time)}</td>
           <td data-label="สถานที่พบ (Location)">${item.location || "-"}</td>
           <td data-label="รายละเอียดผู้แจ้ง (Reporter Details)">
             <div><strong>ชื่อ:</strong> ${item.reporterName || "-"}</div>
@@ -445,6 +477,11 @@
     }
 
     function getManagementActions(item) {
+      // ซ่อนส่วนนี้สำหรับของหาย
+      if (item.source === 'lost') {
+        return `<span style="color:#6b7280;">-</span>`;
+      }
+
       if (isExpired(item)) {
         return `<span class="status expired">จำหน่ายส่งออก (Expired)</span>`;
       } else if (isExpiring(item)) {
