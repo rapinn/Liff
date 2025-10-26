@@ -262,18 +262,16 @@
         <label for="searchDetails">รายละเอียดเพิ่มเติม</label>
         <input type="text" id="searchDetails" placeholder="เช่น สีดำ, มีสติ๊กเกอร์ติด">
       </div>
-      <!-- 🆕 เพิ่ม Filter สถานะ -->
-      <div class="form-group">
-        <label for="statusFilter">เลือกสถานะ</label>
-        <select id="statusFilter">
-          <option value="">-- แสดงทั้งหมด --</option>
-          <option value="waiting">รอมารับคืน / สูญหาย</option>
-          <option value="received">รับคืนแล้ว / ได้คืนแล้ว</option>
-          <option value="expiring">ใกล้ถึง 3 เดือน</option>
-          <option value="expired">หมดอายุแล้ว</option>
-        </select>
-      </div>
       <button id="searchBtn">ค้นหา</button>
+      
+      <!-- ปุ่มแจ้งของหาย -->
+      <div style="margin-top: 20px;">
+        <a href="lost.html" style="text-decoration: none;">
+          <button style="width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; background-color: #ffd13f; color: black; cursor: pointer; font-weight: bold; transition: background-color 0.2s;">
+            แจ้งของหาย
+          </button>
+        </a>
+      </div>
     </div>
 
     <div id="adminTableContainer" style="margin-top:20px; display:none;">
@@ -318,11 +316,6 @@
 
       <div id="notFoundBox" style="display:none; margin-top:16px; text-align:center;">
         <p style="color:#b22222; font-weight:bold;">❌ ไม่พบข้อมูลที่ตรงกัน</p>
-        <a href="lost.html">
-          <button style="background:#ffd13f; color:#222; font-size:18px; border:none; border-radius:6px; padding:14px 28px; font-weight:bold; cursor:pointer;">
-            แจ้งของหาย
-          </button>
-        </a>
       </div>
     </div>
   </div>
@@ -372,7 +365,7 @@
     function getStatusText(item) {
       if (isExpired(item)) return 'หมดอายุแล้ว';
       if (isExpiring(item)) return 'ใกล้ถึง 3 เดือน';
-      const waitingText = (item.source === 'lost') ? 'สูญหาย' : 'รอรับคืน';
+      const waitingText = item.source === 'lost' ? 'สูญหาย' : 'รอรับคืน';
       return item.status === 'received' ? 'ได้คืนแล้ว' : waitingText;
     }
 
@@ -448,31 +441,22 @@
       `).join("");
     }
 
-    document.getElementById("searchBtn").addEventListener("click", async function () {
-      const itemName = document.getElementById("searchItemName").value.trim().toLowerCase();
-      const location = document.getElementById("searchLocation").value.trim().toLowerCase();
-      const date = document.getElementById("searchDate").value;
-      const details = document.getElementById("searchDetails").value.trim().toLowerCase();
-      const statusFilter = document.getElementById("statusFilter").value;
+      document.getElementById("searchBtn").addEventListener("click", async function () {
+        const itemName = document.getElementById("searchItemName").value.trim().toLowerCase();
+        const location = document.getElementById("searchLocation").value.trim().toLowerCase();
+        const date = document.getElementById("searchDate").value;
+        const details = document.getElementById("searchDetails").value.trim().toLowerCase();
 
-      const all = await loadAllItemsFromSheet();
-      const results = all.filter(item => {
-        const matchBasic = 
-          (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
-          (!location || (item.location || '').toLowerCase().includes(location)) &&
-          (!date || item.date === date) &&
-          (!details || (item.details || '').toLowerCase().includes(details));
+        const all = await loadAllItemsFromSheet();
+        const results = all.filter(item => {
+          const matchBasic = 
+            (!itemName || [item.category, item.brand, item.details].some(v => (v || '').toLowerCase().includes(itemName))) &&
+            (!location || (item.location || '').toLowerCase().includes(location)) &&
+            (!date || item.date === date) &&
+            (!details || (item.details || '').toLowerCase().includes(details));
 
-        let matchStatus = true;
-        if (statusFilter) {
-          const itemStatusClass = getStatusClass(item);
-          matchStatus = itemStatusClass === statusFilter;
-        }
-
-        return matchBasic && matchStatus;
-      });
-
-      const container = document.getElementById("adminTableContainer");
+          return matchBasic;
+        });      const container = document.getElementById("adminTableContainer");
       const notFound = document.getElementById("notFoundBox");
       if (results.length > 0) {
         renderAdminTable(results);
